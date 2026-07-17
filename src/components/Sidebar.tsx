@@ -155,7 +155,6 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
           </div>
           <div className="flex flex-col">
             <span className="font-sans font-bold text-white text-lg tracking-tight leading-none">Adiu TMS</span>
-            <span className="text-[10px] text-white/40 font-sans tracking-wide uppercase mt-1">Ethiopian Logistics</span>
           </div>
         </div>
       </div>
