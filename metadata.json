@@ -1,0 +1,6 @@
+{
+  "name": "Adiu TMS",
+  "description": "A professional, enterprise-grade Transport Management System designed for Adiu Communication Service Plc.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
