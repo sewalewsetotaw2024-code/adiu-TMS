@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import { ProjectSite, StoreCluster, Project } from '../types';
 import { ETHIOPIAN_REGIONS, TIM_STAFF } from '../data';
-import { Search, MapPin, Layers, Plus, Trash2, Edit2, Check, ArrowLeft, Briefcase, Users } from 'lucide-react';
+import { Search, MapPin, Layers, Plus, Trash2, Edit2, Check, ArrowLeft } from 'lucide-react';
 
 interface SitesScreenProps {
   sites: ProjectSite[];
   clusters: StoreCluster[];
   projects: Project[];
   onSaveSite: (site: ProjectSite) => void;
+  onRemoveSite?: (id: string) => void;
   onSaveCluster: (cluster: StoreCluster) => void;
   onRemoveCluster?: (id: string) => void;
-  onSaveProject: (project: Project) => void;
-  onRemoveProject?: (id: string) => void;
 }
 
 export default function SitesScreen({
@@ -19,13 +18,12 @@ export default function SitesScreen({
   clusters,
   projects,
   onSaveSite,
+  onRemoveSite,
   onSaveCluster,
-  onRemoveCluster,
-  onSaveProject,
-  onRemoveProject
+  onRemoveCluster
 }: SitesScreenProps) {
   
-  const [activeTab, setActiveTab] = useState<'sites' | 'clusters' | 'projects'>('sites');
+  const [activeTab, setActiveTab] = useState<'sites' | 'clusters'>('sites');
   
   // Sites View States
   const [sitesViewMode, setSitesViewMode] = useState<'list' | 'form'>('list');
@@ -35,11 +33,6 @@ export default function SitesScreen({
   // Clusters View States
   const [clustersViewMode, setClustersViewMode] = useState<'list' | 'form'>('list');
   const [activeCluster, setActiveCluster] = useState<StoreCluster | null>(null);
-
-  // Projects View States
-  const [projectsViewMode, setProjectsViewMode] = useState<'list' | 'form'>('list');
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [projectSearchQuery, setProjectSearchQuery] = useState('');
 
   // --- Sites Logic ---
   const handleInitNewSite = () => {
@@ -57,7 +50,8 @@ export default function SitesScreen({
       geofenceZone: 'CNR',
       receiverName: '',
       receiverPhone: '',
-      status: 'Active'
+      status: 'Active',
+      projectRef: ''
     };
     setActiveSite(newSite);
     setSitesViewMode('form');
@@ -93,6 +87,7 @@ export default function SitesScreen({
       id: `cl-add-${Date.now()}`,
       name: '',
       code: `CL-ZONE-0${nextNum}`,
+      warehouseName: '',
       assignedSites: [],
       zone: 'CNR',
       estimatedTotalDistance: 0,
@@ -146,55 +141,6 @@ export default function SitesScreen({
     alert(`Store Cluster ${activeCluster.name} successfully deployed.`);
   };
 
-  // --- Projects Logic ---
-  const handleInitNewProject = () => {
-    const nextNum = projects.length + 1;
-    const newProject: Project = {
-      id: `prj-${Date.now()}`,
-      name: '',
-      code: `PRJ-NEW-0${nextNum}`,
-      projectManager: 'Solomon Tekle',
-      client: 'Ethio Telecom',
-      status: 'Active',
-      assignedSites: [],
-      budgetEtb: 1000000
-    };
-    setActiveProject(newProject);
-    setProjectsViewMode('form');
-  };
-
-  const handleEditProject = (prj: Project) => {
-    setActiveProject({ ...prj });
-    setProjectsViewMode('form');
-  };
-
-  const handleProjectFieldChange = (field: keyof Project, value: any) => {
-    if (!activeProject) return;
-    setActiveProject({ ...activeProject, [field]: value });
-  };
-
-  const handleToggleProjectSite = (siteId: string) => {
-    if (!activeProject) return;
-    const currentList = activeProject.assignedSites || [];
-    const updatedList = currentList.includes(siteId)
-      ? currentList.filter(id => id !== siteId)
-      : [...currentList, siteId];
-    
-    handleProjectFieldChange('assignedSites', updatedList);
-  };
-
-  const handleSaveProject = () => {
-    if (!activeProject) return;
-    if (!activeProject.name || !activeProject.code) {
-      alert('Project Name and Code are mandatory.');
-      return;
-    }
-    onSaveProject(activeProject);
-    setProjectsViewMode('list');
-    setActiveProject(null);
-    alert(`Project ${activeProject.name} successfully saved.`);
-  };
-
   return (
     <div className="space-y-6 select-none pb-12" id="sites-screen-container">
       
@@ -208,7 +154,7 @@ export default function SitesScreen({
               : 'border-transparent text-[#5F5E5A] hover:text-[#2C2C2A]'
           }`}
         >
-          <MapPin className="w-4 h-4" /> 7a/7b — Project site list & geofences
+          <MapPin className="w-4 h-4" />Project site list & geofences
         </button>
         
         <button
@@ -219,18 +165,7 @@ export default function SitesScreen({
               : 'border-transparent text-[#5F5E5A] hover:text-[#2C2C2A]'
           }`}
         >
-          <Layers className="w-4 h-4" /> 7c — Store cluster routing management
-        </button>
-
-        <button
-          onClick={() => { setActiveTab('projects'); }}
-          className={`px-5 py-2.5 text-xs font-sans font-semibold transition-all flex items-center gap-2 border-b-2 -mb-[2px] ${
-            activeTab === 'projects' 
-              ? 'border-[#1D9E75] text-[#1D9E75]' 
-              : 'border-transparent text-[#5F5E5A] hover:text-[#2C2C2A]'
-          }`}
-        >
-          <Briefcase className="w-4 h-4" /> 7d — Projects & Site Assignments
+          <Layers className="w-4 h-4" />Store cluster routing management
         </button>
       </div>
 
@@ -265,6 +200,7 @@ export default function SitesScreen({
                   <tr className="bg-[#F1EFE8]/45 border-b border-[#D3D1C7]/80 text-[10px] font-sans font-semibold text-[#5F5E5A] uppercase tracking-wider">
                     <th className="p-3">Site ID</th>
                     <th className="p-3">Site Name</th>
+                    <th className="p-3">Project</th>
                     <th className="p-3 text-right">Latitude</th>
                     <th className="p-3 text-right">Longitude</th>
                     <th className="p-3">Town</th>
@@ -286,6 +222,9 @@ export default function SitesScreen({
                       <tr key={site.siteId} className="hover:bg-[#F1EFE8]/25 transition-colors">
                         <td className="p-3 font-mono font-bold text-[#1D9E75]">{site.siteId}</td>
                         <td className="p-3 font-medium">{site.siteName}</td>
+                        <td className="p-3 text-[#5F5E5A] text-xs font-semibold">
+                          {projects.find((p) => p.id === site.projectRef)?.name || 'Unassigned'}
+                        </td>
                         <td className="p-3 text-right font-mono text-[11px] text-slate-600">{site.latitude}</td>
                         <td className="p-3 text-right font-mono text-[11px] text-slate-600">{site.longitude}</td>
                         <td className="p-3">{site.town}</td>
@@ -313,6 +252,14 @@ export default function SitesScreen({
                           >
                             <Edit2 className="w-3.5 h-3.5 text-[#5F5E5A]" />
                           </button>
+                          {onRemoveSite && (
+                            <button
+                              onClick={() => onRemoveSite(site.siteId)}
+                              className="p-1 hover:bg-red-50 text-red-600 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -445,6 +392,20 @@ export default function SitesScreen({
                 >
                   {ETHIOPIAN_REGIONS.map(r => (
                     <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Target Project</label>
+                <select
+                  value={activeSite?.projectRef || ''}
+                  onChange={(e) => setActiveSite({ ...activeSite!, projectRef: e.target.value })}
+                  className="h-9 px-2 border border-[#D3D1C7] rounded-lg focus:outline-none bg-white"
+                >
+                  <option value="">Unassigned</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>{project.name}</option>
                   ))}
                 </select>
               </div>
@@ -702,249 +663,7 @@ export default function SitesScreen({
             </div>
           </div>
         )
-      ) : (
-        /* Projects Tab (7d) */
-        projectsViewMode === 'list' ? (
-          <div className="space-y-6" id="projects-list-tab">
-            <div className="flex items-center justify-between bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm">
-              <div className="flex flex-col">
-                <h3 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Multi-Site Projects Directory</h3>
-                <p className="text-xs text-[#5F5E5A]">Manage telecommunication infrastructure projects and map standard site geofences under each project</p>
-              </div>
-              <button
-                id="add-project-btn"
-                onClick={handleInitNewProject}
-                className="flex items-center gap-1 px-4 py-2 bg-[#1D9E75] text-white rounded-lg text-xs font-sans font-semibold cursor-pointer animate-fade-in"
-              >
-                <Plus className="w-4 h-4" /> Create Project
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5" id="projects-grid">
-              {projects.length === 0 ? (
-                <div className="md:col-span-2 bg-white p-8 text-center border border-dashed border-[#D3D1C7] rounded-xl text-[#5F5E5A]">
-                  No projects registered yet. Create a project and associate multiple sites.
-                </div>
-              ) : (
-                projects.map((prj) => (
-                  <div 
-                    key={prj.id}
-                    className="bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm flex flex-col justify-between hover:shadow-md transition-all gap-4"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex flex-col">
-                          <span className="font-sans font-bold text-sm text-[#2C2C2A]">{prj.name}</span>
-                          <span className="text-[10px] text-[#5F5E5A] font-mono font-semibold tracking-wider uppercase mt-0.5">{prj.code}</span>
-                        </div>
-                        <span className={`px-2.5 py-0.5 rounded-full font-sans text-[10px] font-bold border ${
-                          prj.status === 'Active'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : prj.status === 'Completed'
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-slate-50 text-slate-700 border-slate-200'
-                        }`}>
-                          {prj.status}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs py-1.5 border-t border-b border-slate-100 font-sans">
-                        <div>
-                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Client Partner</span>
-                          <span className="font-semibold text-slate-700">{prj.client}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Project Manager</span>
-                          <span className="font-semibold text-slate-700">{prj.projectManager}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#F1EFE8]/40 p-3 rounded-lg border border-[#D3D1C7]/60 space-y-2 font-sans text-xs">
-                      <div className="flex justify-between items-center text-[10px] text-[#5F5E5A] font-bold uppercase tracking-wider border-b border-[#D3D1C7]/40 pb-1">
-                        <span>Assigned Sites ({prj.assignedSites?.length || 0})</span>
-                        {prj.budgetEtb && <span className="font-mono text-[#1D9E75] font-bold">Budget: {prj.budgetEtb.toLocaleString()} ETB</span>}
-                      </div>
-
-                      <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto pr-1">
-                        {prj.assignedSites?.length === 0 ? (
-                          <span className="text-slate-400 italic text-[11px]">No sites assigned yet. Edit project to link sites.</span>
-                        ) : (
-                          prj.assignedSites?.map(sid => {
-                            const foundSite = sites.find(s => s.siteId === sid);
-                            return (
-                              <span 
-                                key={sid} 
-                                className="bg-white border border-[#D3D1C7] text-[10px] font-mono px-1.5 py-0.5 rounded font-semibold text-slate-700 flex items-center gap-1"
-                                title={foundSite?.siteName}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]"></span>
-                                {sid}
-                              </span>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-[#D3D1C7]/40 flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEditProject(prj)}
-                        className="px-3 py-1 border border-[#D3D1C7] hover:bg-[#F1EFE8] rounded-md text-xs font-sans font-medium text-[#2C2C2A] cursor-pointer"
-                      >
-                        Edit / Assign Sites
-                      </button>
-                      {onRemoveProject && (
-                        <button
-                          onClick={() => onRemoveProject(prj.id)}
-                          className="p-1 hover:bg-red-50 text-red-600 rounded transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Project Form */
-          <div className="bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm space-y-5" id="project-form-container">
-            <div className="flex items-center justify-between border-b border-[#D3D1C7] pb-3">
-              <button 
-                onClick={() => { setProjectsViewMode('list'); setActiveProject(null); }}
-                className="flex items-center gap-1.5 text-xs text-[#5F5E5A] hover:text-[#2C2C2A] font-sans font-medium transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back to projects directory
-              </button>
-              <span className="text-xs font-bold text-[#1D9E75]">
-                {activeProject?.name ? `Editing Project: ${activeProject.name}` : 'Create New Multi-Site Project'}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              {/* Form entries (2/3) */}
-              <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Project name</label>
-                  <input 
-                    type="text" 
-                    value={activeProject?.name || ''} 
-                    onChange={(e) => handleProjectFieldChange('name', e.target.value)}
-                    className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75]"
-                    placeholder="e.g. ZTE LTE Overhaul North"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Project code</label>
-                  <input 
-                    type="text" 
-                    value={activeProject?.code || ''} 
-                    onChange={(e) => handleProjectFieldChange('code', e.target.value)}
-                    className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none font-mono"
-                    placeholder="e.g. PRJ-ZTE-2026-N"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Client partner / customer</label>
-                  <input 
-                    type="text" 
-                    value={activeProject?.client || ''} 
-                    onChange={(e) => handleProjectFieldChange('client', e.target.value)}
-                    className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none"
-                    placeholder="e.g. Ethio Telecom"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Project Manager</label>
-                  <input 
-                    type="text" 
-                    value={activeProject?.projectManager || ''} 
-                    onChange={(e) => handleProjectFieldChange('projectManager', e.target.value)}
-                    className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none"
-                    placeholder="e.g. Solomon Tekle"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Project Budget (ETB)</label>
-                  <input 
-                    type="number" 
-                    value={activeProject?.budgetEtb || 0} 
-                    onChange={(e) => handleProjectFieldChange('budgetEtb', Number(e.target.value))}
-                    className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none font-mono font-bold text-[#1D9E75]"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Project Status</label>
-                  <select 
-                    value={activeProject?.status || 'Active'} 
-                    onChange={(e) => handleProjectFieldChange('status', e.target.value)}
-                    className="h-9 px-2 border border-[#D3D1C7] rounded-lg focus:outline-none bg-white font-medium"
-                  >
-                    <option value="Draft">Draft</option>
-                    <option value="Active">Active</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Suspended">Suspended</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Multi-select site checklist (1/3) */}
-              <div className="bg-[#F1EFE8]/25 p-4 rounded-xl border border-[#D3D1C7] space-y-3">
-                <span className="text-[11px] text-[#5F5E5A] font-bold uppercase tracking-wider block border-b border-[#D3D1C7] pb-1.5">
-                  Assign Sites to Project
-                </span>
-
-                <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
-                  {sites.length === 0 ? (
-                    <p className="text-slate-400 italic text-[11px] p-2 text-center">No sites registered yet. Go to Site tab to add.</p>
-                  ) : (
-                    sites.map(s => {
-                      const isAssigned = activeProject?.assignedSites?.includes(s.siteId);
-                      return (
-                        <label key={s.siteId} className="flex items-center justify-between py-1.5 px-2 border-b border-[#D3D1C7]/30 hover:bg-white rounded transition-colors cursor-pointer text-xs font-sans">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-[#2C2C2A]">{s.siteId}</span>
-                            <span className="text-[10px] text-[#5F5E5A] truncate max-w-[140px]">{s.siteName}</span>
-                          </div>
-                          <input 
-                            type="checkbox" 
-                            checked={isAssigned || false}
-                            onChange={() => handleToggleProjectSite(s.siteId)}
-                            className="rounded border-[#D3D1C7] text-[#1D9E75] focus:ring-[#1D9E75] w-4 h-4 cursor-pointer"
-                          />
-                        </label>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-[#D3D1C7] flex justify-end gap-3">
-              <button 
-                onClick={() => { setProjectsViewMode('list'); setActiveProject(null); }}
-                className="px-4 py-2 border border-[#D3D1C7] bg-white text-[#2C2C2A] rounded-lg font-sans font-semibold hover:bg-[#F1EFE8]"
-              >
-                Cancel
-              </button>
-              <button 
-                id="save-project-btn"
-                onClick={handleSaveProject}
-                className="flex items-center gap-1 px-5 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/95 text-white rounded-lg font-sans font-semibold cursor-pointer transition-colors"
-              >
-                <Check className="w-4 h-4" /> Save Project & Mapped Sites
-              </button>
-            </div>
-          </div>
-        )
-      )}
+      ) : null}
     </div>
   );
 }

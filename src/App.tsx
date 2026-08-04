@@ -4,15 +4,17 @@ import Header from './components/Header';
 
 // Import Screens
 import DashboardScreen from './components/DashboardScreen';
+import ProjectsScreen from './components/ProjectsScreen';
+import ReportingScreen from './components/ReportingScreen';
 import MrScreen from './components/MrScreen';
 import WorkAnalysisScreen from './components/WorkAnalysisScreen';
-import SupplierScreen from './components/SupplierScreen';
+import ContactScreen from './components/ContactScreen';
 import PriceBookScreen from './components/PriceBookScreen';
 import VehicleScreen from './components/VehicleScreen';
 import DispatchComplianceScreen from './components/DispatchCompliance';
 import DriverScreen from './components/DriverScreen';
 import SitesScreen from './components/SitesScreen';
-import ItemCategoryScreen from './components/ItemCategoryScreen';
+import ScopeOfWorkScreen from './components/ScopeOfWorkScreen';
 import ProfitabilityScreen from './components/ProfitabilityScreen';
 import SupplierQuotationScreen from './components/SupplierQuotationScreen';
 import ItemTrackingScreen from './components/ItemTrackingScreen';
@@ -26,7 +28,7 @@ import TrackingScreen from './components/TrackingScreen';
 import { 
   MR, 
   WorkAnalysis, 
-  Supplier, 
+  Contact, 
   PriceBookEntry, 
   PriceThresholdConfig, 
   Vehicle, 
@@ -48,7 +50,7 @@ import {
 import {
   INITIAL_MRS,
   INITIAL_WORK_ANALYSIS,
-  INITIAL_SUPPLIERS,
+  INITIAL_CONTACTS,
   INITIAL_PRICE_BOOK,
   INITIAL_PRICE_CONFIGS,
   INITIAL_VEHICLES,
@@ -76,7 +78,7 @@ export default function App() {
   // Data State Pools
   const [mrs, setMrs] = useState<MR[]>(INITIAL_MRS);
   const [workAnalyses, setWorkAnalyses] = useState<WorkAnalysis[]>(INITIAL_WORK_ANALYSIS);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(INITIAL_SUPPLIERS);
+  const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
   const [priceBook, setPriceBook] = useState<PriceBookEntry[]>(INITIAL_PRICE_BOOK);
   const [thresholdConfigs, setThresholdConfigs] = useState<PriceThresholdConfig[]>(INITIAL_PRICE_CONFIGS);
   const [vehicles, setVehicles] = useState<Vehicle[]>(INITIAL_VEHICLES);
@@ -170,7 +172,7 @@ export default function App() {
 
   const handleSaveWorkAnalysis = (updatedWa: WorkAnalysis) => {
     setWorkAnalyses(prev => {
-      const idx = prev.findIndex(w => w.mrRef === updatedWa.mrRef);
+      const idx = prev.findIndex(w => w.id === updatedWa.id);
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = updatedWa;
@@ -189,15 +191,15 @@ export default function App() {
     setQuotations(prev => prev.filter(q => q.id !== id));
   };
 
-  const handleSaveSupplier = (updatedSup: Supplier) => {
-    setSuppliers(prev => {
-      const idx = prev.findIndex(s => s.id === updatedSup.id);
+  const handleSaveContact = (updatedContact: Contact) => {
+    setContacts(prev => {
+      const idx = prev.findIndex(s => s.id === updatedContact.id);
       if (idx >= 0) {
         const copy = [...prev];
-        copy[idx] = updatedSup;
+        copy[idx] = updatedContact;
         return copy;
       } else {
-        return [updatedSup, ...prev];
+        return [updatedContact, ...prev];
       }
     });
   };
@@ -221,7 +223,7 @@ export default function App() {
 
   const handleSaveThresholdConfig = (config: PriceThresholdConfig) => {
     setThresholdConfigs(prev => {
-      const idx = prev.findIndex(t => t.supplierId === config.supplierId);
+      const idx = prev.findIndex(t => t.vendorId === config.vendorId);
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = config;
@@ -335,10 +337,15 @@ export default function App() {
         const copy = [...prev];
         copy[idx] = site;
         return copy;
-      } else {
-        return [site, ...prev];
       }
+      return [...prev, site];
     });
+  };
+
+  const handleRemoveSite = (siteId: string) => {
+    if (confirm('Are you sure you want to delete this site?')) {
+      setSites(prev => prev.filter(s => s.siteId !== siteId));
+    }
   };
 
   const handleSaveCluster = (cluster: StoreCluster) => {
@@ -525,7 +532,7 @@ export default function App() {
     if (window.confirm('Are you sure you want to restore default Adiu mock data sets?')) {
       setMrs(INITIAL_MRS);
       setWorkAnalyses(INITIAL_WORK_ANALYSIS);
-      setSuppliers(INITIAL_SUPPLIERS);
+      setContacts(INITIAL_CONTACTS);
       setPriceBook(INITIAL_PRICE_BOOK);
       setThresholdConfigs(INITIAL_PRICE_CONFIGS);
       setVehicles(INITIAL_VEHICLES);
@@ -550,13 +557,13 @@ export default function App() {
       case 'dashboard': return ['Operations Dashboard', 'Main KPI view'];
       case 'mr': return ['Material Requests (MR)', 'Form & Dispatch Registry'];
       case 'work-analysis': return ['Work Analysis', 'Cost Calculations'];
-      case 'suppliers': return ['Logistics Partners', 'Supplier Registry'];
+      case 'contacts': return ['Logistics Partners', 'Contact Registry'];
       case 'price-book': return ['Price Book', 'Ex-VAT Standard Contracts'];
       case 'vehicles': return ['Vehicles & QEHS', 'Driver Auditing'];
       case 'sites': return ['Project Sites', 'Geofencing & Store Clusters'];
       case 'categories': return ['Material Classification', 'Item Categories'];
       case 'profitability': return ['Profitability Analysis', 'Quote Valuation & Work Order'];
-      case 'item-tracking': return ['Item Tracking & POD', 'Line Item Dispatch & Delivery Proof'];
+      case 'item-tracking': return ['Proof of Delivery', 'Line Item Dispatch & Delivery Proof'];
       case 'loading-confirmation': return ['Loading Confirmation', 'Warehouse Outbound Scan'];
       case 'tracking': return ['GPS Tracking & Route Execution', 'Live Position, Geofences & Alerts'];
       case 'incidents': return ['Incident Management', 'Investigation & Accountability'];
@@ -569,6 +576,17 @@ export default function App() {
   // Render active screen
   const renderScreen = () => {
     switch (currentScreen) {
+      case 'projects':
+        return (
+          <ProjectsScreen
+            projects={projects}
+            onSaveProject={handleSaveProject}
+          />
+        );
+      case 'reporting':
+        return (
+          <ReportingScreen />
+        );
       case 'dashboard':
         return (
           <DashboardScreen 
@@ -576,6 +594,7 @@ export default function App() {
             pas={pas}
             deliveries={deliveries}
             wccClosures={wccClosures}
+            workAnalyses={workAnalyses}
             setSelectedMrRef={setSelectedMrRef}
             setScreen={setCurrentScreen}
           />
@@ -594,34 +613,24 @@ export default function App() {
           <WorkAnalysisScreen 
             workAnalyses={workAnalyses}
             mrs={mrs}
+            sites={sites}
+            clusters={clusters}
             onSaveWorkAnalysis={handleSaveWorkAnalysis}
             selectedMrRef={selectedMrRef}
           />
         );
-      case 'suppliers':
+      case 'contacts':
         return (
-          <SupplierScreen 
-            suppliers={suppliers}
-            onSaveSupplier={handleSaveSupplier}
-          />
-        );
-      case 'price-book':
-        return (
-          <PriceBookScreen 
-            priceBook={priceBook}
-            suppliers={suppliers}
-            categories={categories}
-            thresholdConfigs={thresholdConfigs}
-            onSavePriceEntry={handleSavePriceEntry}
-            onSaveThresholdConfig={handleSaveThresholdConfig}
-            onRemovePriceEntry={handleRemovePriceEntry}
+          <ContactScreen 
+            contacts={contacts}
+            onSaveContact={handleSaveContact}
           />
         );
       case 'vehicles':
         return (
           <VehicleScreen 
             vehicles={vehicles}
-            suppliers={suppliers}
+            suppliers={contacts}
             drivers={drivers}
             onSaveVehicle={handleSaveVehicle}
           />
@@ -630,7 +639,7 @@ export default function App() {
         return (
           <DispatchComplianceScreen 
             vehicles={vehicles}
-            suppliers={suppliers}
+            suppliers={contacts}
             drivers={drivers}
             onSaveVehicle={handleSaveVehicle}
           />
@@ -651,18 +660,9 @@ export default function App() {
             clusters={clusters}
             projects={projects}
             onSaveSite={handleSaveSite}
+            onRemoveSite={handleRemoveSite}
             onSaveCluster={handleSaveCluster}
             onRemoveCluster={handleRemoveCluster}
-            onSaveProject={handleSaveProject}
-            onRemoveProject={handleRemoveProject}
-          />
-        );
-      case 'categories':
-        return (
-          <ItemCategoryScreen 
-            categories={categories}
-            onSaveCategory={handleSaveCategory}
-            onRemoveCategory={handleRemoveCategory}
           />
         );
       case 'profitability':
@@ -670,7 +670,7 @@ export default function App() {
           <ProfitabilityScreen 
             pas={pas}
             mrs={mrs}
-            suppliers={suppliers}
+            suppliers={contacts}
             onSavePa={handleSavePa}
             selectedMrRef={selectedMrRef}
             setSelectedMrRef={setSelectedMrRef}
@@ -683,7 +683,7 @@ export default function App() {
       case 'supplier-quotation':
         return (
           <SupplierQuotationScreen 
-            suppliers={suppliers}
+            suppliers={contacts}
             priceBook={priceBook}
             workAnalyses={workAnalyses}
             mrs={mrs}
@@ -698,6 +698,9 @@ export default function App() {
         return (
           <ItemTrackingScreen 
             itemTracking={itemTracking}
+            workAnalyses={workAnalyses}
+            mrs={mrs}
+            sites={sites}
             onSaveItemTracking={handleSaveItemTracking}
             setScreen={setCurrentScreen}
           />
@@ -707,6 +710,9 @@ export default function App() {
           <LoadingConfirmationScreen 
             itemTracking={itemTracking}
             loadingConfirmations={loadingConfirmations}
+            workAnalyses={workAnalyses}
+            mrs={mrs}
+            sites={sites}
             onSaveLoadingConfirmation={handleSaveLoadingConfirmation}
             setScreen={setCurrentScreen}
           />
@@ -726,7 +732,7 @@ export default function App() {
             mrs={mrs}
             vehicles={vehicles}
             drivers={drivers}
-            suppliers={suppliers}
+            suppliers={contacts}
             sites={sites}
             prefillMrRef={selectedMrRef}
           />
@@ -745,6 +751,13 @@ export default function App() {
             thresholdConfigs={thresholdConfigs}
             onSaveThresholdConfig={handleSaveThresholdConfig}
             onResetData={handleResetData}
+            categories={categories}
+            onSaveCategory={handleSaveCategory}
+            onRemoveCategory={handleRemoveCategory}
+            priceBookData={priceBook}
+            vendors={contacts.filter(c => c.category === 'Vendor')}
+            onSavePriceBookEntry={handleSavePriceEntry}
+            onRemovePriceBookEntry={handleRemovePriceEntry}
           />
         );
       default:

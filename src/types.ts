@@ -12,6 +12,7 @@ export interface RequisitionItem {
 
 export interface MR {
   mrNumber: string;
+  requestType: 'MR' | 'GRF';
   poNumber: string;
   vendorClient: string;
   requestDate: string;
@@ -53,6 +54,9 @@ export interface MRLineItem {
 export interface WorkAnalysis {
   id: string;
   mrRef: string;
+  clusterRef?: string;
+  warehouseName?: string;
+  route?: string;
   date: string;
   preparedBy: string;
   sites: WorkAnalysisSite[];
@@ -81,12 +85,15 @@ export interface WorkAnalysisSite {
   implementationPriority: 'High' | 'Medium' | 'Low';
   distance: number;
   recommendedTruck: '3-ton' | '5-ton' | '7-ton' | '10-ton' | 'Trailer';
+  included?: boolean;
+  mrRef?: string;
 }
 
-export interface Supplier {
+export interface Contact {
   id: string;
   name: string;
   tin: string;
+  category: 'Supplier' | 'Vendor';
   region: string;
   city: string;
   capitalCity: string;
@@ -111,6 +118,8 @@ export interface Supplier {
   perfExperienceWithAdiu: number;
 }
 
+export type Supplier = Contact;
+
 export interface PriceBookEntry {
   id: string;
   code: string;
@@ -120,13 +129,13 @@ export interface PriceBookEntry {
   effectiveDate: string;
   expiryDate: string;
   status: 'Active' | 'Expired';
-  supplierId: string;
+  vendorId: string;
   itemCategoryId: string;
   remark?: string;
 }
 
 export interface PriceThresholdConfig {
-  supplierId: string;
+  vendorId: string;
   thresholdAmount: number;
   alertThresholdPercent: number;
 }
@@ -139,6 +148,7 @@ export interface Vehicle {
   model: string;
   lastQehsCheck: string;
   status: 'Compliant' | 'Non-compliant' | 'Blacklisted';
+  approvalStatus?: 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected';
   driverName: string;
   driverId: string;
   driverPhone: string;
@@ -202,12 +212,14 @@ export interface ProjectSite {
   receiverName: string;
   receiverPhone: string;
   status: string;
+  projectRef?: string;
 }
 
 export interface StoreCluster {
   id: string;
   name: string;
   code: string;
+  warehouseName: string;
   assignedSites: string[]; // List of siteIds
   zone: string;
   estimatedTotalDistance: number;
@@ -474,6 +486,24 @@ export interface TransportRequestItem {
   vehicle: string;
   driver: string;
   dispatchDate: string;
+  receiverName?: string;
+  receiverPhone?: string;
+  proofOfDeliveryPhotoUrl?: string;
+  proofOfDeliveryPhotoUrls?: string[];
+
+  // last-mile delivery request workflow
+  lastMileDeliveryRequested?: boolean;
+  lastMileSiteId?: string;
+  lastMileTransportAmount?: number;
+  lastMileRequestStatus?: 'Not requested' | 'Requested' | 'Approved' | 'Rejected';
+  lastMileApprovalDocumentUrl?: string;
+
+  // transporter payment request workflow
+  paymentRequested?: boolean;
+  paymentAmount?: number;
+  paymentRequestStatus?: 'Not requested' | 'Requested' | 'Approved' | 'Rejected';
+  paymentRequestNotes?: string;
+  paymentProofDocumentUrl?: string;
 }
 
 export interface LoadingConfirmationData {
@@ -481,7 +511,8 @@ export interface LoadingConfirmationData {
   operatorName: string;
   operatorId: string;
   confirmationTime?: string;
-  status: 'Draft' | 'Confirmed';
+  status: 'Draft' | 'Pending Approval' | 'Confirmed';
   notes: string;
+  loadingEvidencePhotoUrls?: string[];
 }
 

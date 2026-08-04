@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ProfitabilityAnalysis, MR, QuoteComparisonRow, Supplier, PriceBookEntry, WorkAnalysis, SupplierQuotation } from '../types';
-import { INITIAL_PAS, INITIAL_SUPPLIERS } from '../data';
+import { INITIAL_PAS } from '../data';
 import { ArrowRight, ShieldCheck, FileCheck, CheckCircle2, AlertTriangle, XCircle, Info, ExternalLink } from 'lucide-react';
 
 interface ProfitabilityScreenProps {
@@ -63,6 +63,10 @@ export default function ProfitabilityScreen({
   const currentWa = activePa ? workAnalyses.find(w => w.mrRef === activePa.mrRef) : null;
   const currentQuotes = currentWa ? quotations.filter(q => q.workAnalysisId === currentWa.id) : [];
 
+  const totalPas = pas.length;
+  const approvedPas = pas.filter(pa => pa.approvalStatus === 'Approved').length;
+  const pendingPas = pas.filter(pa => pa.approvalStatus !== 'Approved').length;
+
   // Group quotations by supplier to calculate the total aggregate bid
   const supplierAggregates = currentQuotes.reduce((acc, q) => {
     if (!acc[q.supplierId]) {
@@ -77,7 +81,7 @@ export default function ProfitabilityScreen({
     }
     
     // Find the budget in Price Book (default/auto match, used until a Price Book Item is manually selected)
-    const pbEntry = priceBook.find(p => p.code === q.priceBookCode && p.supplierId === q.supplierId);
+    const pbEntry = priceBook.find(p => p.code === q.priceBookCode && p.vendorId === q.supplierId);
     const itemBudgetRate = pbEntry ? pbEntry.unitPrice : q.unitPrice; // Use contract rate or quote rate as fallback
     
     acc[q.supplierId].totalQuoted += q.totalPrice;
@@ -277,8 +281,95 @@ export default function ProfitabilityScreen({
 
   if (!activePa) return null;
 
+  const handleCreateNewPa = () => {
+    const targetMr = selectedMrRef || mrs[0]?.mrNumber || '';
+    handleInitNewPa(targetMr);
+    setSelectedPaNum('');
+  };
+
   return (
     <div className="space-y-6 select-none pb-20" id="profitability-screen-container">
+      <div className="bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-[#2C2C2A]">Profitability analysis</h2>
+            <p className="text-sm text-[#5F5E5A]">Review bid competitiveness and advance procurement decisions with a concise dashboard.</p>
+          </div>
+          <button
+            onClick={handleCreateNewPa}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] text-white rounded-lg text-xs font-semibold hover:bg-[#1D9E75]/90 transition-colors"
+          >
+            <span>New PA</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total analyses</p>
+            <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{totalPas}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Approved</p>
+            <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{approvedPas}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Pending</p>
+            <p className="mt-2 text-2xl font-bold text-[#D97706]">{pendingPas}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-xl border border-[#D3D1C7] shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-[#2C2C2A]">Recent profitability analyses</h3>
+            <p className="text-xs text-[#5F5E5A]">Open any existing PA to review the latest quote comparison.</p>
+          </div>
+          <button
+            onClick={handleCreateNewPa}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-[#D3D1C7] rounded-lg text-xs font-semibold text-[#2C2C2A] hover:bg-[#F1EFE8]/60"
+          >
+            <span>+ Add analysis</span>
+          </button>
+        </div>
+        <div className="mt-4 overflow-x-auto border border-[#D3D1C7]/60 rounded-lg">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#F1EFE8]/45 border-b border-[#D3D1C7]/80 text-[10px] font-semibold text-[#5F5E5A] uppercase tracking-wider">
+                <th className="p-3">PA number</th>
+                <th className="p-3">MR ref</th>
+                <th className="p-3">Date</th>
+                <th className="p-3">Status</th>
+                <th className="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#D3D1C7]/40 text-xs text-[#2C2C2A]">
+              {pas.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-6 text-center text-[#5F5E5A] italic">No profitability analyses yet.</td>
+                </tr>
+              ) : (
+                pas.map(pa => (
+                  <tr key={pa.paNumber} className="hover:bg-[#F1EFE8]/20 transition-colors">
+                    <td className="p-3 font-semibold">{pa.paNumber}</td>
+                    <td className="p-3">{pa.mrRef}</td>
+                    <td className="p-3">{pa.date}</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${pa.approvalStatus === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                        {pa.approvalStatus}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button onClick={() => setSelectedPaNum(pa.paNumber)} className="text-[#1D9E75] font-semibold">Open</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Selector controls */}
       <div className="flex flex-wrap items-center justify-between bg-white p-4 rounded-xl border border-[#D3D1C7] gap-3">
         <div className="flex items-center gap-3">
@@ -464,7 +555,7 @@ export default function ProfitabilityScreen({
                           >
                             <option value="" disabled>-- Select Price Book Item --</option>
                             {priceBook
-                              .filter(p => p.supplierId === row.vendorId)
+                              .filter(p => p.vendorId === row.vendorId)
                               .map(p => (
                                 <option key={p.id} value={p.id}>
                                   {p.code} — {p.itemDescription} ({p.unitPrice.toLocaleString()} ETB/{p.unit})

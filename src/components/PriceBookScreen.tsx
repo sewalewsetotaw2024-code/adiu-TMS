@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { PriceBookEntry, PriceThresholdConfig, Supplier, ItemCategory } from '../types';
+import { PriceBookEntry, PriceThresholdConfig, Contact, ItemCategory } from '../types';
 import { Search, Plus, Save, Edit2, AlertCircle, HelpCircle, Check, Trash2 } from 'lucide-react';
 
 interface PriceBookScreenProps {
   priceBook: PriceBookEntry[];
-  suppliers: Supplier[];
+  vendors: Contact[];
   categories: ItemCategory[];
   thresholdConfigs: PriceThresholdConfig[];
   onSavePriceEntry: (entry: PriceBookEntry) => void;
@@ -14,7 +14,7 @@ interface PriceBookScreenProps {
 
 export default function PriceBookScreen({
   priceBook,
-  suppliers,
+  vendors,
   categories,
   thresholdConfigs,
   onSavePriceEntry,
@@ -22,7 +22,7 @@ export default function PriceBookScreen({
   onRemovePriceEntry
 }: PriceBookScreenProps) {
   
-  const [supplierFilter, setSupplierFilter] = useState('');
+  const [vendorFilter, setvendorFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -31,18 +31,18 @@ export default function PriceBookScreen({
   const [editFields, setEditFields] = useState<Partial<PriceBookEntry>>({});
 
   // Threshold config state
-  const [selectedConfigSupplierId, setSelectedConfigSupplierId] = useState(suppliers[0]?.id || '');
+  const [selectedConfigvendorId, setSelectedConfigvendorId] = useState(vendors[0]?.id || '');
   const [thresholdAmount, setThresholdAmount] = useState(
-    thresholdConfigs.find(c => c.supplierId === (suppliers[0]?.id || ''))?.thresholdAmount || 100000
+    thresholdConfigs.find(c => c.vendorId === (vendors[0]?.id || ''))?.thresholdAmount || 100000
   );
   const [alertThresholdPercent, setAlertThresholdPercent] = useState(
-    thresholdConfigs.find(c => c.supplierId === (suppliers[0]?.id || ''))?.alertThresholdPercent || 10
+    thresholdConfigs.find(c => c.vendorId === (vendors[0]?.id || ''))?.alertThresholdPercent || 10
   );
 
   // Sync threshold controls when supplier selection changes
-  const handleThresholdSupplierChange = (supId: string) => {
-    setSelectedConfigSupplierId(supId);
-    const existing = thresholdConfigs.find(c => c.supplierId === supId);
+  const handleThresholdVendorChange = (supId: string) => {
+    setSelectedConfigvendorId(supId);
+    const existing = thresholdConfigs.find(c => c.vendorId === supId);
     if (existing) {
       setThresholdAmount(existing.thresholdAmount);
       setAlertThresholdPercent(existing.alertThresholdPercent);
@@ -54,11 +54,11 @@ export default function PriceBookScreen({
 
   const handleSaveThreshold = () => {
     onSaveThresholdConfig({
-      supplierId: selectedConfigSupplierId,
+      vendorId: selectedConfigvendorId,
       thresholdAmount,
       alertThresholdPercent
     });
-    alert(`Threshold rules successfully updated for ${suppliers.find(s => s.id === selectedConfigSupplierId)?.name}`);
+    alert(`Threshold rules successfully updated for ${vendors.find(s => s.id === selectedConfigvendorId)?.name}`);
   };
 
   const handleStartEdit = (entry: PriceBookEntry) => {
@@ -89,7 +89,7 @@ export default function PriceBookScreen({
       effectiveDate: new Date().toISOString().split('T')[0],
       expiryDate: '2026-12-31',
       status: 'Active',
-      supplierId: suppliers[0]?.id || 'sup-01',
+      vendorId: vendors[0]?.id || 'sup-01',
       itemCategoryId: categories[0]?.id || 'cat-01'
     };
     onSavePriceEntry(newEntry);
@@ -98,7 +98,7 @@ export default function PriceBookScreen({
 
   // Filter Price Book entries
   const filteredEntries = priceBook.filter(entry => {
-    const matchesSupplier = supplierFilter ? entry.supplierId === supplierFilter : true;
+    const matchesSupplier = vendorFilter ? entry.vendorId === vendorFilter : true;
     const matchesCategory = categoryFilter ? entry.itemCategoryId === categoryFilter : true;
     const matchesSearch = searchQuery 
       ? entry.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,21 +110,42 @@ export default function PriceBookScreen({
 
   return (
     <div className="space-y-6 select-none" id="price-book-container">
-      {/* Page Description Subtitle */}
-      <div className="bg-white px-5 py-3.5 rounded-xl border border-[#D3D1C7] flex items-center justify-between shadow-sm">
-        <span className="text-xs font-semibold text-[#5F5E5A] font-sans">
-          List prices — <span className="text-[#2C2C2A] font-bold">ETB without VAT</span>, all other taxes and duties inclusive.
-        </span>
-        <span className="text-[10px] bg-[#1D9E75]/10 text-[#1D9E75] font-mono font-bold px-2.5 py-1 rounded border border-[#1D9E75]/35 uppercase tracking-wide">
-          Standardized Price Book
-        </span>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
         {/* Left Area (3/4 width) - Main Lists and Filter */}
-        <div className="lg:col-span-3 bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm space-y-4">
+        <div className="lg:col-span-3 space-y-5 bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
           
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-[#2C2C2A]">Price Book</h2>
+              <p className="text-sm text-[#5F5E5A]">List prices — ETB without VAT, all other taxes and duties inclusive.</p>
+            </div>
+            <button
+              id="add-price-item-btn"
+              onClick={handleAddNewEntry}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add Price Item
+            </button>
+          </div>
+
+          {/* KPIs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total Items</p>
+              <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{priceBook.length}</p>
+            </div>
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Vendors</p>
+              <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{vendors.length}</p>
+            </div>
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Active Items</p>
+              <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{priceBook.filter(p => p.status === 'Active').length}</p>
+            </div>
+          </div>
+
           {/* Filters Bar */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
@@ -139,14 +160,14 @@ export default function PriceBookScreen({
               />
             </div>
 
-            {/* Supplier Filter */}
+            {/* Vendor Filter */}
             <select
-              value={supplierFilter}
-              onChange={(e) => setSupplierFilter(e.target.value)}
+              value={vendorFilter}
+              onChange={(e) => setvendorFilter(e.target.value)}
               className="h-9 px-2 rounded-lg border border-[#D3D1C7] text-xs font-sans text-[#2C2C2A] bg-white focus:outline-none"
             >
-              <option value="">All Suppliers</option>
-              {suppliers.map(sup => (
+              <option value="">All Vendors</option>
+              {vendors.map(sup => (
                 <option key={sup.id} value={sup.id}>{sup.name}</option>
               ))}
             </select>
@@ -163,13 +184,6 @@ export default function PriceBookScreen({
               ))}
             </select>
 
-            <button
-              id="add-price-item-btn"
-              onClick={handleAddNewEntry}
-              className="ml-auto flex items-center gap-1.5 px-3.5 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" /> + Add item
-            </button>
           </div>
 
           {/* List prices Data Table */}
@@ -181,7 +195,7 @@ export default function PriceBookScreen({
                   <th className="p-2.5 text-center border border-gray-400 w-[10%]">Code</th>
                   <th className="p-2.5 text-left border border-gray-400 w-[30%]">Item</th>
                   <th className="p-2.5 text-left border border-gray-400 w-[15%]">Category</th>
-                  <th className="p-2.5 text-left border border-gray-400 w-[15%]">Supplier</th>
+                  <th className="p-2.5 text-left border border-gray-400 w-[15%]">Vendor</th>
                   <th className="p-2.5 text-center border border-gray-400 w-[8%]">Unit</th>
                   <th className="p-2.5 text-center border border-gray-400 w-[12%] leading-tight text-xs">
                     Unit Price
@@ -245,16 +259,16 @@ export default function PriceBookScreen({
                         <td className="p-2.5 border border-gray-300">
                           {isEditing ? (
                             <select
-                              value={editFields.supplierId || ''}
-                              onChange={(e) => handleEditFieldChange('supplierId', e.target.value)}
+                              value={editFields.vendorId || ''}
+                              onChange={(e) => handleEditFieldChange('vendorId', e.target.value)}
                               className="w-full h-8 px-1 border border-[#D3D1C7] rounded text-xs bg-white focus:outline-none"
                             >
-                              {suppliers.map(sup => (
+                              {vendors.map(sup => (
                                 <option key={sup.id} value={sup.id}>{sup.name}</option>
                               ))}
                             </select>
                           ) : (
-                            <span className="text-[#5F5E5A] font-medium">{suppliers.find(s => s.id === entry.supplierId)?.name || 'Unknown'}</span>
+                            <span className="text-[#5F5E5A] font-medium">{vendors.find(s => s.id === entry.vendorId)?.name || 'Unknown'}</span>
                           )}
                         </td>
                         <td className="p-2.5 text-center border border-gray-300">
@@ -333,13 +347,13 @@ export default function PriceBookScreen({
           <div className="space-y-3 text-xs font-sans">
             {/* Supplier select */}
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Supplier name</label>
+              <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Vendor name</label>
               <select
-                value={selectedConfigSupplierId}
-                onChange={(e) => handleThresholdSupplierChange(e.target.value)}
+                value={selectedConfigvendorId}
+                onChange={(e) => handleThresholdVendorChange(e.target.value)}
                 className="h-9 px-2 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75] bg-white font-medium"
               >
-                {suppliers.map(s => (
+                {vendors.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
@@ -390,3 +404,4 @@ export default function PriceBookScreen({
     </div>
   );
 }
+

@@ -23,6 +23,7 @@ export default function RequisitionSpreadsheet({ mr, onUpdateMr }: RequisitionSp
   const siteAddress = mr.siteAddress || mr.lineItems?.[0]?.siteId || '';
   const siteId = mr.lineItems?.[0]?.siteId || '';
   const poNo = mr.poNumber || '';
+  const requestType = mr.requestType || 'MR';
 
   const items = mr.requisitionItems || [];
 
@@ -495,7 +496,7 @@ export default function RequisitionSpreadsheet({ mr, onUpdateMr }: RequisitionSp
             <div className="col-span-2 bg-gray-100 p-3 font-bold text-gray-700 border-r border-b border-gray-300 flex items-center">
               Warehouse Name
             </div>
-            <div className="col-span-6 p-2 border-r border-b border-gray-300 flex items-center bg-white">
+            <div className="col-span-4 p-2 border-r border-b border-gray-300 flex items-center bg-white">
               <input
                 type="text"
                 className="w-full bg-transparent border-none text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 rounded px-1 font-semibold"
@@ -503,6 +504,19 @@ export default function RequisitionSpreadsheet({ mr, onUpdateMr }: RequisitionSp
                 onChange={(e) => updateMetaField('warehouseName', e.target.value)}
                 placeholder="Akaki Warehouse Network-6"
               />
+            </div>
+            <div className="col-span-2 bg-gray-100 p-3 font-bold text-gray-700 border-r border-b border-gray-300 flex items-center">
+              Request Type
+            </div>
+            <div className="col-span-2 p-2 border-r border-b border-gray-300 flex items-center bg-white">
+              <select
+                value={requestType}
+                onChange={(e) => updateMetaField('requestType', e.target.value)}
+                className="w-full bg-transparent border-none text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 rounded px-1 font-semibold"
+              >
+                <option value="MR">MR - Material Request</option>
+                <option value="GRF">GRF - Goods Release Form</option>
+              </select>
             </div>
             <div className="col-span-2 bg-gray-100 p-3 font-bold text-gray-700 border-r border-b border-gray-300 flex items-center">
               Subcontractor

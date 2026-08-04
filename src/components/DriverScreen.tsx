@@ -25,6 +25,10 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
     return matchesSearch && matchesStatus;
   });
 
+  const totalDrivers = drivers.length;
+  const activeDrivers = drivers.filter(d => d.status === 'Active').length;
+  const assignedDrivers = drivers.filter(d => d.assignedVehiclePlate).length;
+
   const handleInitNewDriver = () => {
     const newDriver: Driver = {
       id: `DRV-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -103,6 +107,35 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
     <div className="space-y-6 select-none" id="driver-screen-container">
       {viewMode === 'list' ? (
         <div className="bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-[#2C2C2A]">Driver operations</h2>
+              <p className="text-sm text-[#5F5E5A]">Keep compliance, availability, and fleet assignments visible in one place.</p>
+            </div>
+            <button 
+              id="add-driver-btn"
+              onClick={handleInitNewDriver}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add Driver
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total drivers</p>
+              <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{totalDrivers}</p>
+            </div>
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Active drivers</p>
+              <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{activeDrivers}</p>
+            </div>
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Assigned vehicles</p>
+              <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{assignedDrivers}</p>
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {/* Search */}

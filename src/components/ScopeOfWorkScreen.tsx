@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { ItemCategory } from '../types';
 import { Plus, Check, Edit2, Search, Trash2 } from 'lucide-react';
 
-interface ItemCategoryScreenProps {
-  categories: ItemCategory[];
+interface ScopeOfWorkScreenProps {
+  scopesOfWork: ItemCategory[];
   onSaveCategory: (category: ItemCategory) => void;
   onRemoveCategory?: (id: string) => void;
 }
 
-export default function ItemCategoryScreen({ categories, onSaveCategory, onRemoveCategory }: ItemCategoryScreenProps) {
+export default function ScopeOfWorkScreen({ scopesOfWork, onSaveCategory, onRemoveCategory }: ScopeOfWorkScreenProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -55,21 +55,21 @@ export default function ItemCategoryScreen({ categories, onSaveCategory, onRemov
     onSaveCategory(updated);
   };
 
-  const filtered = categories.filter(c => 
+  const filtered = scopesOfWork.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="space-y-6 select-none" id="item-categories-container">
+    <div className="space-y-6 select-none" id="item-scopes of work-container">
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Categories List (2/3 width) */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D3D1C7]/60 pb-3">
             <div className="flex flex-col">
-              <h3 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Item Categories Flat List</h3>
+              <h3 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Scope of Work Flat List</h3>
               <p className="text-xs text-[#5F5E5A]">Referenced by material transport request line items and list prices</p>
             </div>
             
@@ -78,7 +78,7 @@ export default function ItemCategoryScreen({ categories, onSaveCategory, onRemov
                 <Search className="w-3.5 h-3.5 text-[#5F5E5A] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input 
                   type="text" 
-                  placeholder="Search categories..." 
+                  placeholder="Search scopes of work..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full h-8 pl-9 pr-3 rounded-lg border border-[#D3D1C7] bg-[#F1EFE8]/30 font-sans text-xs text-[#2C2C2A] focus:outline-none focus:border-[#1D9E75]"
@@ -98,7 +98,7 @@ export default function ItemCategoryScreen({ categories, onSaveCategory, onRemov
           </div>
 
           <div className="overflow-x-auto border border-[#D3D1C7]/60 rounded-lg">
-            <table className="w-full text-left border-collapse" id="categories-table">
+            <table className="w-full text-left border-collapse" id="scopes of work-table">
               <thead>
                 <tr className="bg-[#F1EFE8]/45 border-b border-[#D3D1C7]/80 text-[10px] font-sans font-semibold text-[#5F5E5A] uppercase tracking-wider">
                   <th className="p-3">Category Code</th>
@@ -203,7 +203,7 @@ export default function ItemCategoryScreen({ categories, onSaveCategory, onRemov
                   className="h-9 px-2 border border-[#D3D1C7] rounded-lg focus:outline-none bg-white"
                 >
                   <option value="">None (Top-Level Category)</option>
-                  {categories.map(c => (
+                  {scopesOfWork.map(c => (
                     <option key={c.id} value={c.code}>{c.name}</option>
                   ))}
                 </select>
@@ -251,12 +251,12 @@ export default function ItemCategoryScreen({ categories, onSaveCategory, onRemov
           ) : (
             <div className="text-xs text-[#5F5E5A] space-y-3 leading-relaxed">
               <p>
-                Adiu TMS utilizes flat categories classification to filter and map material list prices in standard contracts.
+                Adiu TMS utilizes flat scopes of work classification to filter and map material list prices in standard contracts.
               </p>
               <div className="bg-[#F1EFE8]/40 p-3 rounded-lg border border-[#D3D1C7]/60 space-y-2">
                 <span className="font-bold text-[#2C2C2A] block text-[11px] uppercase tracking-tight">Core Rules:</span>
                 <ul className="list-disc pl-4 space-y-1">
-                  <li>Only **Active** categories are select-able on MR line items.</li>
+                  <li>Only **Active** scopes of work are select-able on MR line items.</li>
                   <li>Inactivating a category keeps existing MR histories untouched, but blocks future Price Book entries.</li>
                   <li>Ensure Code formatting is uppercase (e.g., RF-ANT).</li>
                 </ul>

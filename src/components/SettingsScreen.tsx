@@ -1,25 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  Shield, 
-  GitMerge, 
-  TrendingUp, 
-  Plus, 
-  Trash2, 
-  Check, 
-  AlertTriangle, 
-  UserCheck, 
-  ToggleLeft, 
-  ToggleRight, 
-  Save,
-  ArrowUp,
-  ArrowDown,
-  PlusCircle,
-  RotateCcw,
-  Search,
-  Sparkles
-} from 'lucide-react';
-import { PriceThresholdConfig } from '../types';
+import { Settings, Users, Shield, GitMerge, AlertTriangle, Sparkles, Server, Target, ToggleLeft, ToggleRight, Layers, BookOpen, Plus, PlusCircle, Save, Check, Search, Trash2, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
+import ScopeOfWorkScreen from './ScopeOfWorkScreen';
+import PriceBookScreen from './PriceBookScreen';
+import { PriceThresholdConfig, ItemCategory, PriceBookEntry, Contact } from '../types';
 
 interface UserItem {
   id: string;
@@ -117,15 +100,29 @@ interface SettingsScreenProps {
   thresholdConfigs: PriceThresholdConfig[];
   onSaveThresholdConfig: (config: PriceThresholdConfig) => void;
   onResetData?: () => void;
+  categories: ItemCategory[];
+  onSaveCategory: (category: ItemCategory) => void;
+  onRemoveCategory?: (id: string) => void;
+  priceBookData: PriceBookEntry[];
+  vendors: Contact[];
+  onSavePriceBookEntry: (entry: PriceBookEntry) => void;
+  onRemovePriceBookEntry?: (id: string) => void;
 }
 
 export default function SettingsScreen({
   thresholdConfigs,
   onSaveThresholdConfig,
-  onResetData
+  onResetData,
+  categories,
+  onSaveCategory,
+  onRemoveCategory,
+  priceBookData,
+  vendors,
+  onSavePriceBookEntry,
+  onRemovePriceBookEntry
 }: SettingsScreenProps) {
   
-  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'workflows'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'workflows' | 'scope' | 'pricebook'>('users');
 
   // Custom roles states
   const [customRoleName, setCustomRoleName] = useState('');
@@ -596,6 +593,26 @@ export default function SettingsScreen({
           }`}
         >
           <GitMerge className="w-4 h-4" /> Approval Workflows
+        </button>
+        <button
+          onClick={() => setActiveTab('scope')}
+          className={`px-5 py-2.5 text-xs font-sans font-semibold transition-all flex items-center gap-2 border-b-2 -mb-[2px] ${
+            activeTab === 'scope' 
+              ? 'border-[#1D9E75] text-[#1D9E75]' 
+              : 'border-transparent text-[#5F5E5A] hover:text-[#2C2C2A]'
+          }`}
+        >
+          <Layers className="w-4 h-4" /> Scope of Work
+        </button>
+        <button
+          onClick={() => setActiveTab('pricebook')}
+          className={`px-5 py-2.5 text-xs font-sans font-semibold transition-all flex items-center gap-2 border-b-2 -mb-[2px] ${
+            activeTab === 'pricebook' 
+              ? 'border-[#1D9E75] text-[#1D9E75]' 
+              : 'border-transparent text-[#5F5E5A] hover:text-[#2C2C2A]'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" /> Price Book
         </button>
       </div>
 
@@ -1489,6 +1506,26 @@ export default function SettingsScreen({
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === 'scope' && (
+        <ScopeOfWorkScreen
+          scopesOfWork={categories}
+          onSaveCategory={onSaveCategory}
+          onRemoveCategory={onRemoveCategory}
+        />
+      )}
+
+      {activeTab === 'pricebook' && (
+        <PriceBookScreen
+          priceBook={priceBookData}
+          vendors={vendors}
+          categories={categories}
+          thresholdConfigs={thresholdConfigs}
+          onSavePriceEntry={onSavePriceBookEntry}
+          onSaveThresholdConfig={onSaveThresholdConfig}
+          onRemovePriceEntry={onRemovePriceBookEntry}
+        />
       )}
 
       {/* Database Resetter at bottom */}

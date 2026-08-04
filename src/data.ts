@@ -1,5 +1,5 @@
 import {
-  Supplier,
+  Contact,
   Vehicle,
   ProjectSite,
   StoreCluster,
@@ -55,16 +55,17 @@ export const INITIAL_SITES: ProjectSite[] = [
 
 // 3. Store Clusters
 export const INITIAL_CLUSTERS: StoreCluster[] = [
-  { id: 'cl-01', name: 'Addis East Cluster', code: 'CL-ADD-E', assignedSites: ['ET-ADD-1024', 'ET-ADD-1875'], zone: 'CNR', estimatedTotalDistance: 34, assignedSdt: 'Yonas Berhe', notes: 'Serves East Addis sites with regular 3-ton shuttles.' },
-  { id: 'cl-02', name: 'North West Corridor Cluster', code: 'CL-NW-CORR', assignedSites: ['ET-BAH-0982', 'ET-GON-1432'], zone: 'NWR', estimatedTotalDistance: 1305, assignedSdt: 'Aster Assefa', notes: 'High distance route. Requires 10-ton closed trucks with GPS verification.' }
+  { id: 'cl-01', name: 'Addis East Cluster', code: 'CL-ADD-E', warehouseName: 'Akaki Warehouse Network-6', assignedSites: ['ET-ADD-1024', 'ET-ADD-1875'], zone: 'CNR', estimatedTotalDistance: 34, assignedSdt: 'Yonas Berhe', notes: 'Serves East Addis sites with regular 3-ton shuttles.' },
+  { id: 'cl-02', name: 'North West Corridor Cluster', code: 'CL-NW-CORR', warehouseName: 'Bahir Dar Regional Warehouse', assignedSites: ['ET-BAH-0982', 'ET-GON-1432'], zone: 'NWR', estimatedTotalDistance: 1305, assignedSdt: 'Aster Assefa', notes: 'High distance route. Requires 10-ton closed trucks with GPS verification.' }
 ];
 
-// 4. Suppliers
-export const INITIAL_SUPPLIERS: Supplier[] = [
+// 4. Contacts
+export const INITIAL_CONTACTS: Contact[] = [
   {
     id: 'sup-01',
     name: 'Abyssinia Logistics Plc',
     tin: '0012489632',
+    category: 'Supplier',
     region: 'CNR',
     city: 'Addis Ababa',
     capitalCity: 'Addis Ababa',
@@ -90,6 +91,7 @@ export const INITIAL_SUPPLIERS: Supplier[] = [
     id: 'sup-02',
     name: 'Lucy Freight & Transit Plc',
     tin: '0098551241',
+    category: 'Supplier',
     region: 'ER',
     city: 'Adama',
     capitalCity: 'Adama',
@@ -115,6 +117,7 @@ export const INITIAL_SUPPLIERS: Supplier[] = [
     id: 'sup-03',
     name: 'Danakil Transport Services',
     tin: '0104882195',
+    category: 'Supplier',
     region: 'Somali',
     city: 'Jijiga',
     capitalCity: 'Jijiga',
@@ -135,22 +138,126 @@ export const INITIAL_SUPPLIERS: Supplier[] = [
     perfServiceQuality: 15,
     perfAvailability: 15,
     perfExperienceWithAdiu: 20
+  },
+  {
+    id: 'ven-01',
+    name: 'ZTE',
+    tin: '0011223344',
+    category: 'Vendor',
+    region: 'CNR',
+    city: 'Addis Ababa',
+    capitalCity: 'Addis Ababa',
+    licenseNo: 'BL/AA/ZTE/2024',
+    status: 'Active',
+    rating: 95,
+    address: 'Bole Road, ZTE Tower',
+    phone: '+251111223344',
+    email: 'contact@zte.com.et',
+    contactPerson: 'Alemayehu',
+    licenseExpiryDate: '2028-12-31',
+    serviceQualityScore: 95,
+    creditFacility: true,
+    experienceWithAdiu: true,
+    notes: 'Major telecom vendor for network equipment.',
+    perfCreditFacility: 20,
+    perfProductQuality: 20,
+    perfServiceQuality: 18,
+    perfAvailability: 19,
+    perfExperienceWithAdiu: 18
+  },
+  {
+    id: 'ven-02',
+    name: 'Huawei',
+    tin: '0022334455',
+    category: 'Vendor',
+    region: 'CNR',
+    city: 'Addis Ababa',
+    capitalCity: 'Addis Ababa',
+    licenseNo: 'BL/AA/HW/2024',
+    status: 'Active',
+    rating: 96,
+    address: 'Bole, Huawei Building',
+    phone: '+251112334455',
+    email: 'contact@huawei.com.et',
+    contactPerson: 'Bekele',
+    licenseExpiryDate: '2028-12-31',
+    serviceQualityScore: 96,
+    creditFacility: true,
+    experienceWithAdiu: true,
+    notes: 'Major telecom vendor.',
+    perfCreditFacility: 20,
+    perfProductQuality: 19,
+    perfServiceQuality: 19,
+    perfAvailability: 19,
+    perfExperienceWithAdiu: 19
+  },
+  {
+    id: 'ven-03',
+    name: 'Ericsson',
+    tin: '0033445566',
+    category: 'Vendor',
+    region: 'CNR',
+    city: 'Addis Ababa',
+    capitalCity: 'Addis Ababa',
+    licenseNo: 'BL/AA/ER/2024',
+    status: 'Active',
+    rating: 94,
+    address: 'Bole, Ericsson Office',
+    phone: '+251113445566',
+    email: 'info@ericsson.com.et',
+    contactPerson: 'Dawit',
+    licenseExpiryDate: '2028-12-31',
+    serviceQualityScore: 94,
+    creditFacility: true,
+    experienceWithAdiu: true,
+    notes: 'Global telecom vendor.',
+    perfCreditFacility: 19,
+    perfProductQuality: 20,
+    perfServiceQuality: 18,
+    perfAvailability: 18,
+    perfExperienceWithAdiu: 19
+  },
+  {
+    id: 'ven-04',
+    name: 'ET (Ethio Telecom)',
+    tin: '0044556677',
+    category: 'Vendor',
+    region: 'CNR',
+    city: 'Addis Ababa',
+    capitalCity: 'Addis Ababa',
+    licenseNo: 'BL/AA/ET/2024',
+    status: 'Active',
+    rating: 98,
+    address: 'Churchill Road, ET HQ',
+    phone: '+251114556677',
+    email: 'info@ethiotelecom.et',
+    contactPerson: 'Tadesse',
+    licenseExpiryDate: '2028-12-31',
+    serviceQualityScore: 98,
+    creditFacility: true,
+    experienceWithAdiu: true,
+    notes: 'National telecom operator/vendor.',
+    perfCreditFacility: 20,
+    perfProductQuality: 20,
+    perfServiceQuality: 19,
+    perfAvailability: 20,
+    perfExperienceWithAdiu: 19
   }
 ];
 
 // 5. Price Book Entries
 export const INITIAL_PRICE_BOOK: PriceBookEntry[] = [
-  { id: 'pb-01', code: 'PB-3T-CNR', itemDescription: '3-Ton Truck Flat Rate CNR Zone (Addis Ababa)', unit: 'Trip', unitPrice: 8500, effectiveDate: '2026-01-01', expiryDate: '2026-12-31', status: 'Active', supplierId: 'sup-01', itemCategoryId: 'cat-01', remark: 'Standard local trip rate' },
-  { id: 'pb-02', code: 'PB-5T-CNR', itemDescription: '5-Ton Truck Flat Rate CNR Zone (Addis Ababa)', unit: 'Trip', unitPrice: 12500, effectiveDate: '2026-01-01', expiryDate: '2026-12-31', status: 'Active', supplierId: 'sup-01', itemCategoryId: 'cat-01', remark: 'Standard local trip rate' },
-  { id: 'pb-03', code: 'PB-10T-CNR', itemDescription: '10-Ton Truck Flat Rate CNR Zone (Addis Ababa)', unit: 'Trip', unitPrice: 24000, effectiveDate: '2026-01-01', expiryDate: '2026-12-31', status: 'Active', supplierId: 'sup-01', itemCategoryId: 'cat-01', remark: 'Standard local trip rate' },
-  { id: 'pb-04', code: 'PB-10T-NWR', itemDescription: '10-Ton Cross-Country Route CNR-NWR (Addis to Bahir Dar)', unit: 'Trip', unitPrice: 78000, effectiveDate: '2026-02-01', expiryDate: '2026-12-31', status: 'Active', supplierId: 'sup-01', itemCategoryId: 'cat-02', remark: 'Asphalt road route' },
-  { id: 'pb-05', code: 'PB-10T-ER', itemDescription: '10-Ton Cross-Country Route CNR-ER (Addis to Dire Dawa)', unit: 'Trip', unitPrice: 62000, effectiveDate: '2026-02-01', expiryDate: '2026-12-31', status: 'Active', supplierId: 'sup-02', itemCategoryId: 'cat-02', remark: 'Expressway inclusive' },
-  { id: 'pb-06', code: '350000142584', itemDescription: 'Cherrypicker', unit: 'Site', unitPrice: 28685.42, effectiveDate: '2026-01-01', expiryDate: '2026-12-31', status: 'Active', supplierId: 'sup-01', itemCategoryId: 'cat-01', remark: 'Daily equipment rental rate' }
+  { id: 'pb-01', code: 'PB-3T-CNR', itemDescription: '3-Ton Truck Flat Rate CNR Zone (Addis Ababa)', unit: 'Trip', unitPrice: 8500, effectiveDate: '2026-01-01', expiryDate: '2026-12-31', status: 'Active', vendorId: 'ven-01', itemCategoryId: 'cat-01', remark: 'Standard local trip rate' },
+  { id: 'pb-02', code: 'PB-5T-CNR', itemDescription: '5-Ton Truck Flat Rate CNR Zone (Addis Ababa)', unit: 'Trip', unitPrice: 12500, effectiveDate: '2026-01-01', expiryDate: '2026-12-31', status: 'Active', vendorId: 'ven-01', itemCategoryId: 'cat-01', remark: 'Standard local trip rate' },
+  { id: 'pb-03', code: 'PB-10T-CNR', itemDescription: '10-Ton Truck Flat Rate CNR Zone (Addis Ababa)', unit: 'Trip', unitPrice: 24000, effectiveDate: '2026-01-01', expiryDate: '2026-12-31', status: 'Active', vendorId: 'ven-01', itemCategoryId: 'cat-01', remark: 'Standard local trip rate' },
+  { id: 'pb-04', code: 'PB-10T-NWR', itemDescription: '10-Ton Cross-Country Route CNR-NWR (Addis to Bahir Dar)', unit: 'Trip', unitPrice: 78000, effectiveDate: '2026-02-01', expiryDate: '2026-12-31', status: 'Active', vendorId: 'ven-01', itemCategoryId: 'cat-02', remark: 'Asphalt road route' },
+  { id: 'pb-05', code: 'PB-10T-ER', itemDescription: '10-Ton Cross-Country Route CNR-ER (Addis to Dire Dawa)', unit: 'Trip', unitPrice: 62000, effectiveDate: '2026-02-01', expiryDate: '2026-12-31', status: 'Active', vendorId: 'ven-02', itemCategoryId: 'cat-02', remark: 'Expressway inclusive' },
+  { id: 'pb-06', code: '350000142584', itemDescription: 'Cherrypicker', unit: 'Site', unitPrice: 28685.42, effectiveDate: '2026-01-01', expiryDate: '2026-12-31', status: 'Active', vendorId: 'ven-01', itemCategoryId: 'cat-01', remark: 'Daily equipment rental rate' }
 ];
 
 export const INITIAL_PRICE_CONFIGS: PriceThresholdConfig[] = [
-  { supplierId: 'sup-01', thresholdAmount: 150000, alertThresholdPercent: 12 },
-  { supplierId: 'sup-02', thresholdAmount: 100000, alertThresholdPercent: 10 }
+  { vendorId: 'ven-01', thresholdAmount: 150000, alertThresholdPercent: 12 },
+  { vendorId: 'ven-02', thresholdAmount: 100000, alertThresholdPercent: 10 }
 ];
 
 // 6. Vehicles
@@ -230,6 +337,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
 export const INITIAL_MRS: MR[] = [
   {
     mrNumber: 'MR-2026-0412',
+    requestType: 'MR',
     poNumber: 'PO-99124018',
     vendorClient: 'Ethio Telecom / Ericsson',
     requestDate: '2026-06-20',
@@ -356,6 +464,7 @@ export const INITIAL_MRS: MR[] = [
   },
   {
     mrNumber: 'MR-2026-0413',
+    requestType: 'MR',
     poNumber: 'PO-99124019',
     vendorClient: 'Safaricom Ethiopia',
     requestDate: '2026-06-22',
@@ -384,6 +493,7 @@ export const INITIAL_MRS: MR[] = [
   },
   {
     mrNumber: 'MR-2026-0414',
+    requestType: 'MR',
     poNumber: 'PO-99124020',
     vendorClient: 'Ethio Telecom',
     requestDate: '2026-06-25',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MR, ProfitabilityAnalysis, DeliveryJob, WccClosure, QuoteComparisonRow } from '../types';
+import { MR, ProfitabilityAnalysis, DeliveryJob, WccClosure, QuoteComparisonRow, WorkAnalysis } from '../types';
 import { 
   FileText, 
   TrendingUp, 
@@ -34,6 +34,7 @@ interface DashboardScreenProps {
   pas: ProfitabilityAnalysis[];
   deliveries: DeliveryJob[];
   wccClosures: WccClosure[];
+  workAnalyses: WorkAnalysis[];
   setScreen: (screen: string) => void;
   setSelectedMrRef?: (mrRef: string) => void;
 }
@@ -43,6 +44,7 @@ export default function DashboardScreen({
   pas, 
   deliveries, 
   wccClosures, 
+  workAnalyses,
   setScreen,
   setSelectedMrRef
 }: DashboardScreenProps) {
@@ -176,6 +178,10 @@ export default function DashboardScreen({
 
   // Supplier rating score summary
   const supplierPerformanceSla = selectedSupplier === 'sup-02' ? 91.2 : 96.5;
+
+  const totalWorkAnalysesCount = workAnalyses.length;
+  const validatedWorkAnalysesCount = workAnalyses.filter(w => w.status === 'Validated').length;
+  const pendingWorkAnalysesCount = totalWorkAnalysesCount - validatedWorkAnalysesCount;
 
   return (
     <div className={`space-y-6 select-none transition-all duration-300 ${isRefreshing ? 'opacity-40 scale-[0.99]' : ''}`} id="dashboard-screen-container">
@@ -435,6 +441,19 @@ export default function DashboardScreen({
             <p className="text-[10px] text-[#5F5E5A] mt-1.5">Based on on-time delivery ratios</p>
           </div>
           <span className="text-[9px] text-amber-600 font-semibold">Weighted compliance score</span>
+        </div>
+
+        {/* Card 9: Work Analysis Records */}
+        <div 
+          className="bg-white p-4 rounded-xl border border-[#D3D1C7] shadow-sm space-y-1.5 flex flex-col justify-between cursor-pointer hover:shadow-md"
+          onClick={() => setScreen('work-analysis')}
+        >
+          <span className="text-[10px] font-bold text-[#5F5E5A] uppercase tracking-wider block">Work Analysis Records</span>
+          <div className="py-1">
+            <div className="text-xl font-extrabold text-[#2C2C2A]">{totalWorkAnalysesCount}</div>
+            <p className="text-[10px] text-[#5F5E5A] mt-1.5">{validatedWorkAnalysesCount} validated • {pendingWorkAnalysesCount} pending</p>
+          </div>
+          <span className="text-[9px] text-[#1D9E75] font-semibold">Planning throughput</span>
         </div>
 
       </div>

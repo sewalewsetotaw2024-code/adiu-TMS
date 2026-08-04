@@ -53,6 +53,7 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
     const nextNum = 412 + mrs.length;
     const newMr: MR = {
       mrNumber: `MR-2026-0${nextNum}`,
+      requestType: 'MR',
       poNumber: '',
       vendorClient: '',
       requestDate: new Date().toISOString().split('T')[0],
@@ -85,7 +86,7 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
       longitude: 0,
       mwLinks: 'None',
       town: '',
-      projectScope: '',
+      projectScope: INITIAL_CATEGORIES[0]?.name || '',
       zoneManager: '',
       implementationPriority: 'Medium',
       distance: 0,
@@ -176,48 +177,38 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
   if (!activeMr) {
     return (
       <div className="space-y-6 select-none pb-20 max-w-[1600px] mx-auto" id="mr-screen-container">
-        {/* Dashboard Header */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-[#5F5E5A]">Total Requests</span>
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><FileText className="w-5 h-5" /></div>
-            </div>
-            <span className="text-3xl font-bold text-[#2C2C2A]">{kpis.total}</span>
+      <div className="space-y-5 bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-[#2C2C2A]">Material Requisitions</h2>
+            <p className="text-sm text-[#5F5E5A]">Manage transport requests and dispatch routing.</p>
           </div>
-          <div className="bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-[#5F5E5A]">Drafts / Incomplete</span>
-              <div className="p-2 bg-gray-100 text-gray-600 rounded-lg"><FilePlus className="w-5 h-5" /></div>
-            </div>
-            <span className="text-3xl font-bold text-[#2C2C2A]">{kpis.drafts}</span>
-          </div>
-          <div className="bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-[#5F5E5A]">Pending Approval</span>
-              <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><Clock className="w-5 h-5" /></div>
-            </div>
-            <span className="text-3xl font-bold text-[#2C2C2A]">{kpis.pendingApproval}</span>
-          </div>
-          <div className="bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-[#5F5E5A]">In Progress / Dispatched</span>
-              <div className="p-2 bg-[#1D9E75]/10 text-[#1D9E75] rounded-lg"><Truck className="w-5 h-5" /></div>
-            </div>
-            <span className="text-3xl font-bold text-[#2C2C2A]">{kpis.inProgress}</span>
-          </div>
-        </div>
-
-        {/* Top Toolbar */}
-        <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-[#D3D1C7] shadow-sm mb-6">
-          <h2 className="text-lg font-bold text-[#2C2C2A]">Material Requisitions</h2>
           <button 
             id="init-new-mr-btn"
             onClick={handleInitNewMr}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2C2C2A] text-white rounded-lg text-sm font-semibold hover:bg-black transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
           >
             <Plus className="w-4 h-4" /> Create New MR
           </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total Requests</p>
+            <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{kpis.total}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Drafts / Incomplete</p>
+            <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{kpis.drafts}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Pending Approval</p>
+            <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{kpis.pendingApproval}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">In Progress / Dispatched</p>
+            <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{kpis.inProgress}</p>
+          </div>
         </div>
 
         {/* MR Data Table */}
@@ -226,6 +217,7 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
             <thead>
               <tr className="bg-gray-50 border-b border-[#D3D1C7] text-xs font-sans font-bold text-[#5F5E5A] uppercase tracking-wider">
                 <th className="px-6 py-4">MR Number</th>
+                <th className="px-6 py-4">Type</th>
                 <th className="px-6 py-4">Vendor / Client</th>
                 <th className="px-6 py-4">Request Date</th>
                 <th className="px-6 py-4">Status</th>
@@ -246,6 +238,15 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
                 mrs.map(m => (
                   <tr key={m.mrNumber} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedMrRef(m.mrNumber)}>
                     <td className="px-6 py-4 font-mono font-bold text-[#1D9E75]">{m.mrNumber}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                        m.requestType === 'GRF'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-amber-100 text-amber-900'
+                      }`}>
+                        {m.requestType}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 font-semibold">{m.vendorClient || <span className="text-gray-400 italic">Draft</span>}</td>
                     <td className="px-6 py-4 font-mono text-gray-600">{m.requestDate}</td>
                     <td className="px-6 py-4">
@@ -274,6 +275,7 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
             </tbody>
           </table>
         </div>
+        </div>
       </div>
     );
   }
@@ -292,7 +294,14 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
           </button>
           <div className="h-8 w-px bg-gray-300 mx-2 hidden md:block"></div>
           <div>
-            <h2 className="text-lg font-bold text-[#2C2C2A]">{activeMr.mrNumber}</h2>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h2 className="text-lg font-bold text-[#2C2C2A]">{activeMr.mrNumber}</h2>
+              <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                activeMr.requestType === 'GRF' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-900'
+              }`}>
+                {activeMr.requestType}
+              </span>
+            </div>
             <p className="text-xs text-gray-500">{activeMr.vendorClient || 'Draft Requisition'}</p>
           </div>
         </div>
@@ -392,6 +401,19 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
                 disabled 
                 className="h-10 px-3 rounded-lg border border-[#D3D1C7] bg-[#F1EFE8]/50 text-[#5F5E5A] font-semibold"
               />
+            </div>
+
+            {/* Request Type */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] text-[#5F5E5A] font-bold uppercase tracking-wide">Request type</label>
+              <select
+                value={activeMr.requestType}
+                onChange={(e) => handleFieldChange('requestType', e.target.value as 'MR' | 'GRF')}
+                className="h-10 px-3 rounded-lg border border-[#D3D1C7] bg-white focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20 focus:outline-none transition-all"
+              >
+                <option value="MR">MR - Material Request</option>
+                <option value="GRF">GRF - Goods Release Form</option>
+              </select>
             </div>
 
             {/* PO Number */}
@@ -571,16 +593,17 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
                             
                             {isEditing ? (
                               <select
-                                value={item.itemCategory}
-                                onChange={(e) => handleLineItemFieldChange(index, 'itemCategory', e.target.value)}
+                                value={item.projectScope}
+                                onChange={(e) => handleLineItemFieldChange(index, 'projectScope', e.target.value)}
                                 className="h-8 px-2 border border-[#D3D1C7] rounded text-xs focus:outline-none bg-white mt-1"
                               >
-                                {INITIAL_CATEGORIES.map(cat => (
-                                  <option key={cat.code} value={cat.code}>{cat.name}</option>
+                                <option value="">-- Select Scope of Work --</option>
+                                {INITIAL_CATEGORIES.filter(cat => cat.status === 'Active').map(cat => (
+                                  <option key={cat.code} value={cat.name}>{cat.name}</option>
                                 ))}
                               </select>
                             ) : (
-                              <span className="text-xs text-gray-500">{item.itemCategory}</span>
+                              <span className="text-xs text-gray-500">{item.projectScope || 'No scope selected'}</span>
                             )}
                           </div>
                         </td>

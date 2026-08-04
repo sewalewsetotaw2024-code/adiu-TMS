@@ -24,6 +24,10 @@ export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehi
     return matchesSearch && matchesStatus;
   });
 
+  const totalVehicles = vehicles.length;
+  const compliantVehicles = vehicles.filter(v => v.status === 'Compliant').length;
+  const nonCompliantVehicles = vehicles.filter(v => v.status === 'Non-compliant').length;
+
   const handleInitNewVehicle = () => {
     const newVehicle: Vehicle = {
       plateNumber: '',
@@ -52,7 +56,8 @@ export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehi
       qehsGpsTracker: false,
       qehsVehiclePhotoUrl: '',
       qehsDriverIdPhotoUrl: '',
-      rejectionReason: 'Complete full QEHS checklist validation prior to deployment.'
+      rejectionReason: 'Complete full QEHS checklist validation prior to deployment.',
+      approvalStatus: 'Draft'
     };
     setActiveVehicle(newVehicle);
     setViewMode('form');
@@ -95,16 +100,17 @@ export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehi
     setActiveVehicle(updated);
   };
 
-  const handleSave = () => {
+  const handleSave = (statusType: 'Draft' | 'Pending Approval') => {
     if (!activeVehicle) return;
     if (!activeVehicle.plateNumber) {
       alert('Plate number is required.');
       return;
     }
-    onSaveVehicle(activeVehicle);
+    const finalVehicle = { ...activeVehicle, approvalStatus: statusType };
+    onSaveVehicle(finalVehicle);
     setViewMode('list');
     setActiveVehicle(null);
-    alert(`Vehicle ${activeVehicle.plateNumber} compliance log registered successfully.`);
+    alert(`Vehicle ${activeVehicle.plateNumber} compliance log registered successfully as ${statusType}.`);
   };
 
   // Upload simulation
@@ -126,6 +132,35 @@ export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehi
     <div className="space-y-6 select-none" id="vehicle-screen-container">
       {viewMode === 'list' ? (
         <div className="bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-[#2C2C2A]">Fleet compliance</h2>
+              <p className="text-sm text-[#5F5E5A]">Track fleet readiness and audit status from a single dashboard view.</p>
+            </div>
+            <button 
+              id="add-vehicle-btn"
+              onClick={handleInitNewVehicle}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add Vehicle & Audit
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total vehicles</p>
+              <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{totalVehicles}</p>
+            </div>
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Compliant</p>
+              <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{compliantVehicles}</p>
+            </div>
+            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Needs attention</p>
+              <p className="mt-2 text-2xl font-bold text-[#D97706]">{nonCompliantVehicles}</p>
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {/* Search */}
@@ -614,11 +649,16 @@ export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehi
                 Cancel
               </button>
               <button
-                id="vehicle-save-btn"
-                onClick={handleSave}
+                onClick={() => handleSave('Draft')}
+                className="flex items-center gap-1 px-5 py-2 border border-[#1D9E75] text-[#1D9E75] hover:bg-[#1D9E75]/10 rounded-lg text-xs font-sans font-semibold cursor-pointer transition-all shadow-sm"
+              >
+                Save as Draft
+              </button>
+              <button
+                onClick={() => handleSave('Pending Approval')}
                 className="flex items-center gap-1 px-5 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/95 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-all shadow-sm"
               >
-                <Check className="w-4 h-4" /> Register vehicle log
+                <Check className="w-4 h-4" /> Send for QEHS Approval
               </button>
             </div>
           </div>

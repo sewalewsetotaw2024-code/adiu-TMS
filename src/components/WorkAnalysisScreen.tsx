@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { WorkAnalysis, WorkAnalysisSite, MR } from '../types';
+import { WorkAnalysis, WorkAnalysisSite, MR, StoreCluster, ProjectSite } from '../types';
 import { TL_STAFF, TIM_STAFF, TRUCK_TYPES } from '../data';
 import { Save, Check, ShieldAlert, FileText, Plus, Trash2, ArrowRight } from 'lucide-react';
 
 interface WorkAnalysisScreenProps {
   workAnalyses: WorkAnalysis[];
   mrs: MR[];
+  sites: ProjectSite[];
+  clusters: StoreCluster[];
   onSaveWorkAnalysis: (wa: WorkAnalysis) => void;
   selectedMrRef: string | null;
 }
@@ -13,73 +15,57 @@ interface WorkAnalysisScreenProps {
 export default function WorkAnalysisScreen({ 
   workAnalyses, 
   mrs, 
+  sites,
+  clusters,
   onSaveWorkAnalysis,
   selectedMrRef 
 }: WorkAnalysisScreenProps) {
   
   const [activeWa, setActiveWa] = useState<WorkAnalysis | null>(null);
   const [selectedWaId, setSelectedWaId] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [selectedClusterIds, setSelectedClusterIds] = useState<string[]>([]);
+  const [activeClusterId, setActiveClusterId] = useState<string | null>(null);
 
-  // When selected WA changes or is initialized
+  const cloneWorkAnalysis = (wa: WorkAnalysis): WorkAnalysis => JSON.parse(JSON.stringify({
+    ...wa,
+    sites: wa.sites.map(site => ({ ...site, included: site.included ?? true }))
+  }));
+
   useEffect(() => {
-    if (selectedWaId) {
-      const wa = workAnalyses.find(w => w.id === selectedWaId);
-      if (wa) {
-        setActiveWa(JSON.parse(JSON.stringify(wa)));
-        return;
-      }
-    }
+    // Add any initialization logic if necessary, though selectedMrRef is now unused at the top level
+  }, [selectedMrRef]);
 
-    // Fallback: search if we have a WA for the current selectedMrRef
-    if (selectedMrRef) {
-      const wa = workAnalyses.find(w => w.mrRef === selectedMrRef);
-      if (wa) {
-        setActiveWa(JSON.parse(JSON.stringify(wa)));
-        setSelectedWaId(wa.id);
-        return;
-      }
-    }
+  const previewClusterId = activeClusterId && selectedClusterIds.includes(activeClusterId)
+    ? activeClusterId
+    : selectedClusterIds[0] || null;
 
-    // Default to first WA, or initialize a new draft for the selected MR
-    if (workAnalyses.length > 0 && !selectedMrRef) {
-      setActiveWa(JSON.parse(JSON.stringify(workAnalyses[0])));
-      setSelectedWaId(workAnalyses[0].id);
-    } else {
-      handleInitNewWa(selectedMrRef || (mrs[0]?.mrNumber || ''));
-    }
-  }, [selectedWaId, selectedMrRef, workAnalyses]);
+  const previewCluster = clusters.find(cluster => cluster.id === previewClusterId) || null;
+  const previewClusterSites = previewCluster
+    ? sites.filter(site => previewCluster.assignedSites.includes(site.siteId))
+    : [];
 
-  const handleInitNewWa = (mrRefNum: string) => {
-    const matchedMr = mrs.find(m => m.mrNumber === mrRefNum);
-    const initialSites: WorkAnalysisSite[] = matchedMr 
-      ? matchedMr.lineItems.map((li, idx) => ({
-          id: `was-${idx}-${Date.now()}`,
-          siteId: li.siteId,
-          siteName: li.siteName,
-          latitude: li.latitude,
-          longitude: li.longitude,
-          mwLinks: li.mwLinks,
-          town: li.town,
-          projectScope: li.projectScope,
-          zoneManager: li.zoneManager,
-          implementationPriority: li.implementationPriority,
-          distance: li.distance,
-          recommendedTruck: '3-ton'
-        }))
-      : [];
+  const handleToggleCluster = (clusterId: string) => {
+    setSelectedClusterIds([clusterId]);
+    setActiveClusterId(clusterId);
+  };
 
-    const totalDist = initialSites.reduce((sum, site) => sum + site.distance, 0);
-
-    const nextNum = 91 + workAnalyses.length;
+  const handleStartNewWa = () => {
+    setIsCreatingNew(true);
+    setViewMode('detail');
     const newWa: WorkAnalysis = {
-      id: `WA-2026-00${nextNum}`,
-      mrRef: mrRefNum,
+      id: `DRAFT_NEW`,
+      mrRef: 'Multiple (See Sites)',
+      clusterRef: '',
+      warehouseName: '',
+      route: '',
       date: new Date().toISOString().split('T')[0],
-      preparedBy: matchedMr?.assignedTl || TL_STAFF[0],
-      sites: initialSites,
+      preparedBy: TL_STAFF[0],
+      sites: [],
       truckTypeRecommended: '3-ton',
-      totalSites: initialSites.length,
-      totalDistance: totalDist,
+      totalSites: 0,
+      totalDistance: 0,
       estimatedTrips: 1,
       specialRequirements: ['Last-mile labour'],
       keyRisks: '',
@@ -88,11 +74,90 @@ export default function WorkAnalysisScreen({
       validationDate: '',
       status: 'Pending'
     };
-
     setActiveWa(newWa);
   };
 
-  // Realtime sum and calculation when sites distance/recommended trucks change
+  const handleViewDetail = (waId: string) => {
+    const wa = workAnalyses.find(w => w.id === waId);
+    setIsCreatingNew(false);
+    setSelectedWaId(waId);
+    setActiveWa(wa ? cloneWorkAnalysis(wa) : null);
+    setViewMode('detail');
+  };
+
+  useEffect(() => {
+    if (selectedWaId && selectedWaId !== 'DRAFT_NEW') {
+      const wa = workAnalyses.find(w => w.id === selectedWaId);
+      if (wa) {
+        setActiveWa(cloneWorkAnalysis(wa));
+        return;
+      }
+    }
+
+    if (viewMode === 'detail' && selectedMrRef) {
+      const wa = workAnalyses.find(w => w.mrRef === selectedMrRef);
+      if (wa) {
+        setActiveWa(cloneWorkAnalysis(wa));
+        setSelectedWaId(wa.id);
+        return;
+      }
+    }
+
+    if (viewMode === 'list') {
+      setActiveWa(null);
+    }
+  }, [selectedWaId, selectedMrRef, workAnalyses, viewMode]);
+
+  const computeSummaryFields = (sites: WorkAnalysisSite[], warehouseName: string = '') => {
+    const includedSites = sites.filter(site => site.included !== false);
+    const totalSites = includedSites.length;
+    const totalDistance = includedSites.reduce((max, site) => Math.max(max, Number(site.distance || 0)), 0);
+    const townRoute = Array.from(new Set(includedSites.map(site => site.town).filter(Boolean))).join(' → ');
+    const route = warehouseName ? [warehouseName, townRoute].filter(Boolean).join(' → ') : townRoute;
+    return { totalSites, totalDistance, route };
+  };
+
+  const handleClusterSelect = (clusterId: string) => {
+    const cluster = clusters.find(c => c.id === clusterId);
+    if (!cluster || !activeWa) return;
+
+    const clusterSitesMap = new Map<string, WorkAnalysisSite>();
+    sites
+      .filter(site => cluster.assignedSites.includes(site.siteId))
+      .forEach(site => {
+        if (!clusterSitesMap.has(site.siteId)) {
+          clusterSitesMap.set(site.siteId, {
+            id: `was-${site.siteId}-${Date.now()}`,
+            siteId: site.siteId,
+            siteName: site.siteName,
+            latitude: site.latitude,
+            longitude: site.longitude,
+            mwLinks: 'None',
+            town: site.town,
+            projectScope: site.projectScope,
+            zoneManager: site.zoneManager,
+            implementationPriority: site.implementationPriority,
+            distance: site.distance,
+            recommendedTruck: '3-ton',
+            included: true
+          });
+        }
+      });
+
+    const clusterSites = Array.from(clusterSitesMap.values());
+    const summary = computeSummaryFields(clusterSites, cluster.warehouseName || cluster.name);
+
+    setActiveWa({
+      ...activeWa,
+      clusterRef: cluster.code,
+      sites: clusterSites,
+      totalSites: summary.totalSites,
+      totalDistance: summary.totalDistance,
+      route: summary.route,
+      warehouseName: cluster.warehouseName || cluster.name
+    });
+  };
+
   const handleSiteFieldChange = (index: number, field: keyof WorkAnalysisSite, value: any) => {
     if (!activeWa) return;
     const updatedSites = [...activeWa.sites];
@@ -101,14 +166,33 @@ export default function WorkAnalysisScreen({
       [field]: value
     };
 
-    // Calculate sum
-    const totalDist = updatedSites.reduce((sum, site) => sum + Number(site.distance || 0), 0);
+    const summary = computeSummaryFields(updatedSites, activeWa.warehouseName || '');
 
     setActiveWa({
       ...activeWa,
       sites: updatedSites,
-      totalSites: updatedSites.length,
-      totalDistance: totalDist
+      totalSites: summary.totalSites,
+      totalDistance: summary.totalDistance,
+      route: summary.route
+    });
+  };
+
+  const handleToggleSiteIncluded = (index: number) => {
+    if (!activeWa) return;
+    const updatedSites = [...activeWa.sites];
+    updatedSites[index] = {
+      ...updatedSites[index],
+      included: !(updatedSites[index].included ?? true)
+    };
+
+    const summary = computeSummaryFields(updatedSites);
+
+    setActiveWa({
+      ...activeWa,
+      sites: updatedSites,
+      totalSites: summary.totalSites,
+      totalDistance: summary.totalDistance,
+      route: summary.route
     });
   };
 
@@ -126,25 +210,30 @@ export default function WorkAnalysisScreen({
       zoneManager: '',
       implementationPriority: 'Medium',
       distance: 0,
-      recommendedTruck: '3-ton'
+      recommendedTruck: '3-ton',
+      included: true
     };
     const updated = [...activeWa.sites, newSite];
+    const summary = computeSummaryFields(updated, activeWa.warehouseName || '');
     setActiveWa({
       ...activeWa,
       sites: updated,
-      totalSites: updated.length
+      totalSites: summary.totalSites,
+      totalDistance: summary.totalDistance,
+      route: summary.route
     });
   };
 
   const handleRemoveSiteRow = (index: number) => {
     if (!activeWa) return;
     const updated = activeWa.sites.filter((_, i) => i !== index);
-    const totalDist = updated.reduce((sum, site) => sum + Number(site.distance || 0), 0);
+    const summary = computeSummaryFields(updated, activeWa.warehouseName || '');
     setActiveWa({
       ...activeWa,
       sites: updated,
-      totalSites: updated.length,
-      totalDistance: totalDist
+      totalSites: summary.totalSites,
+      totalDistance: summary.totalDistance,
+      route: summary.route
     });
   };
 
@@ -161,69 +250,186 @@ export default function WorkAnalysisScreen({
     });
   };
 
-  const handleSave = () => {
+  const handleSave = (action: 'draft' | 'close' | 'new') => {
     if (!activeWa) return;
-    onSaveWorkAnalysis(activeWa);
-    alert(`Work analysis ${activeWa.id} successfully saved as draft!`);
+    
+    let waToSave = activeWa;
+    if (waToSave.id === 'DRAFT_NEW') {
+      const nextNum = 91 + workAnalyses.length;
+      waToSave = { ...waToSave, id: `WA-2026-00${nextNum}` };
+    }
+    
+    onSaveWorkAnalysis(waToSave);
+    alert(`Work analysis ${waToSave.id} successfully saved!`);
+    
+    if (action === 'close') {
+      setViewMode('list');
+      setActiveWa(null);
+    } else if (action === 'new') {
+      handleStartNewWa();
+    } else {
+      setActiveWa(waToSave);
+      setSelectedWaId(waToSave.id);
+      setIsCreatingNew(false);
+    }
   };
 
   const handleSubmitValidation = () => {
     if (!activeWa) return;
+    
+    let waToSave = activeWa;
+    if (waToSave.id === 'DRAFT_NEW') {
+      const nextNum = 91 + workAnalyses.length;
+      waToSave = { ...waToSave, id: `WA-2026-00${nextNum}` };
+    }
+
     const updated = {
-      ...activeWa,
+      ...waToSave,
       status: 'Validated' as const,
+      validatedBy: 'Current User',
       validationDate: new Date().toISOString().split('T')[0]
     };
     onSaveWorkAnalysis(updated);
-    setActiveWa(updated);
-    alert(`Work analysis ${updated.id} validated successfully. It has cleared the planning stage.`);
+    alert(`Work analysis ${updated.id} submitted for validation!`);
+    setViewMode('list');
+    setActiveWa(null);
   };
-
-  if (!activeWa) return null;
 
   const specialReqsList = ['Security escort', 'Night delivery', 'Last-mile labour', 'Refrigeration'];
 
-  return (
-    <div className="space-y-6 select-none pb-20" id="work-analysis-container">
-      {/* Selection row */}
-      <div className="flex flex-wrap items-center justify-between bg-white p-4 rounded-xl border border-[#D3D1C7] gap-3">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-[#5F5E5A]">Select analysis record:</span>
-          <select 
-            id="wa-selector"
-            value={selectedWaId}
-            onChange={(e) => {
-              setSelectedWaId(e.target.value);
-            }}
-            className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans text-[#2C2C2A] bg-[#F1EFE8]/30 focus:outline-none focus:border-[#1D9E75]"
+  const totalWorkAnalysisCount = workAnalyses.length;
+  const validatedCount = workAnalyses.filter(w => w.status === 'Validated').length;
+  const pendingCount = totalWorkAnalysisCount - validatedCount;
+
+  if (viewMode === 'list') {
+    return (
+      <div className="space-y-6 select-none pb-20" id="work-analysis-list-container">
+      <div className="space-y-5 bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-[#2C2C2A]">Work Analysis</h2>
+            <p className="text-sm text-[#5F5E5A]">Create, review, and manage planning summaries for transport requests.</p>
+          </div>
+          <button
+            onClick={handleStartNewWa}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
           >
-            {workAnalyses.map(w => (
-              <option key={w.id} value={w.id}>{w.id} (MR: {w.mrRef})</option>
-            ))}
-          </select>
+            <Plus className="w-4 h-4" /> New Work Analysis
+          </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-[#5F5E5A]">Create for MR:</span>
-          <select 
-            id="wa-mr-linker"
-            onChange={(e) => {
-              if (e.target.value) handleInitNewWa(e.target.value);
-            }}
-            defaultValue=""
-            className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans text-[#2C2C2A] bg-[#F1EFE8]/30 focus:outline-none focus:border-[#1D9E75]"
-          >
-            <option value="" disabled>-- Select MR request --</option>
-            {mrs.map(m => (
-              <option key={m.mrNumber} value={m.mrNumber}>{m.mrNumber}</option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total Analyses</p>
+            <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{totalWorkAnalysisCount}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Validated</p>
+            <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{validatedCount}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Pending</p>
+            <p className="mt-2 text-2xl font-bold text-[#D97706]">{pendingCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-[#D3D1C7] shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-[#D3D1C7] text-xs font-sans font-bold text-[#5F5E5A] uppercase tracking-wider">
+                <th className="px-5 py-4">WA ID</th>
+                <th className="px-5 py-4">MR Ref</th>
+                <th className="px-5 py-4">Prepared By</th>
+                <th className="px-5 py-4">Date</th>
+                <th className="px-5 py-4">Sites</th>
+                <th className="px-5 py-4">Distance</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#D3D1C7]/40 text-sm font-sans text-[#2C2C2A]">
+              {workAnalyses.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-16 text-center text-[#5F5E5A]">
+                    No work analysis records available. Create one from an MR to get started.
+                  </td>
+                </tr>
+              ) : (
+                workAnalyses.map((wa) => (
+                  <tr key={wa.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4 font-mono text-[#1D9E75]">{wa.id}</td>
+                    <td className="px-5 py-4">{wa.mrRef}</td>
+                    <td className="px-5 py-4">{wa.preparedBy}</td>
+                    <td className="px-5 py-4">{wa.date}</td>
+                    <td className="px-5 py-4">{wa.totalSites}</td>
+                    <td className="px-5 py-4">{wa.totalDistance} km</td>
+                    <td className="px-5 py-4">
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${
+                        wa.status === 'Validated' ? 'bg-emerald-100 text-emerald-800' :
+                        wa.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {wa.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <button
+                        onClick={() => handleViewDetail(wa.id)}
+                        className="text-[#1D9E75] hover:text-[#168561] text-sm font-semibold"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+    </div>
+    );
+  }
+
+
+
+  if (viewMode === 'detail' && !activeWa) {
+    return (
+      <div className="space-y-6 select-none pb-20" id="work-analysis-loading-container">
+        <div className="bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
+          <h2 className="text-xl font-bold text-[#2C2C2A]">Loading work analysis…</h2>
+          <p className="mt-2 text-sm text-[#5F5E5A]">The selected record is being prepared for editing.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 select-none pb-20" id="work-analysis-container">
+
 
       {/* Main Analysis Form Container */}
       <div className="space-y-6 bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
         
+        {isCreatingNew && (
+          <div className="p-4 border border-[#D3D1C7] rounded-xl bg-[#F1EFE8]/20 space-y-3 mb-6">
+            <h3 className="text-sm font-bold text-[#2C2C2A]">Setup Analysis Record</h3>
+            <div className="flex flex-col gap-1 max-w-md">
+                <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Target Cluster</label>
+                <select
+                  value={clusters.find(c => c.code === activeWa?.clusterRef)?.id || ''}
+                  onChange={(e) => handleClusterSelect(e.target.value)}
+                  className="h-9 w-full px-3 border border-[#D3D1C7] rounded-lg text-xs bg-white focus:outline-none"
+                >
+                  <option value="" disabled>Select target cluster to import sites...</option>
+                  {clusters.map(cluster => (
+                    <option key={cluster.id} value={cluster.id}>{cluster.name} ({cluster.warehouseName})</option>
+                  ))}
+                </select>
+            </div>
+          </div>
+        )}
+
         {/* Section A — Header */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 border-b border-[#D3D1C7] pb-2">
@@ -234,7 +440,7 @@ export default function WorkAnalysisScreen({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-sans">
             <div className="flex flex-col gap-1">
               <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Work analysis number</label>
-              <input type="text" value={activeWa.id} disabled className="h-9 px-3 border border-[#D3D1C7] rounded-lg bg-[#F1EFE8]/50 text-[#5F5E5A] font-mono font-semibold" />
+              <input type="text" value={activeWa.id === 'DRAFT_NEW' ? 'Generated on save' : activeWa.id} disabled className="h-9 px-3 border border-[#D3D1C7] rounded-lg bg-[#F1EFE8]/50 text-[#5F5E5A] font-mono font-semibold" />
             </div>
 
             <div className="flex flex-col gap-1">
@@ -265,6 +471,32 @@ export default function WorkAnalysisScreen({
               </select>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans mt-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Cluster</label>
+              <input 
+                type="text" 
+                value={clusters.find(cluster => cluster.code === activeWa.clusterRef)?.name || activeWa.clusterRef || ''} 
+                disabled 
+                className="h-9 px-3 border border-[#D3D1C7] rounded-lg bg-[#F1EFE8]/50 text-[#5F5E5A] font-semibold" 
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Warehouse name</label>
+              <input 
+                type="text" 
+                value={activeWa.warehouseName || clusters.find(cluster => cluster.code === activeWa.clusterRef)?.warehouseName || ''} 
+                disabled 
+                className="h-9 px-3 border border-[#D3D1C7] rounded-lg bg-[#F1EFE8]/50 text-[#5F5E5A] font-semibold" 
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 p-4 rounded-xl border border-[#D3D1C7]/60 bg-[#F1EFE8]/25 text-xs font-sans">
+            <span className="block text-[11px] text-[#5F5E5A] uppercase tracking-tight font-medium">Route</span>
+            <p className="mt-2 text-sm text-[#2C2C2A] font-semibold leading-6">{activeWa.route || 'No route towns selected yet.'}</p>
+          </div>
         </div>
 
         {/* Section B — Site summary table */}
@@ -287,8 +519,10 @@ export default function WorkAnalysisScreen({
               <thead>
                 <tr className="bg-[#F1EFE8]/45 border-b border-[#D3D1C7]/80 text-[10px] font-sans font-semibold text-[#5F5E5A] uppercase tracking-wider">
                   <th className="p-2 text-center">No</th>
+                  <th className="p-2">Include</th>
                   <th className="p-2">Site ID</th>
                   <th className="p-2">Site Name</th>
+                  <th className="p-2">Assigned MR</th>
                   <th className="p-2">Town</th>
                   <th className="p-2 text-right">Lat</th>
                   <th className="p-2 text-right">Long</th>
@@ -301,7 +535,7 @@ export default function WorkAnalysisScreen({
               <tbody className="divide-y divide-[#D3D1C7]/40 text-xs font-sans text-[#2C2C2A]">
                 {activeWa.sites.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="p-6 text-center text-[#5F5E5A] italic">
+                    <td colSpan={11} className="p-6 text-center text-[#5F5E5A] italic">
                       No sites added to analysis summary yet.
                     </td>
                   </tr>
@@ -309,6 +543,14 @@ export default function WorkAnalysisScreen({
                   activeWa.sites.map((site, index) => (
                     <tr key={site.id} className="hover:bg-[#F1EFE8]/20 transition-colors">
                       <td className="p-2 text-center font-mono text-[#5F5E5A]">{index + 1}</td>
+                      <td className="p-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={site.included !== false}
+                          onChange={() => handleToggleSiteIncluded(index)}
+                          className="rounded border-[#D3D1C7] text-[#1D9E75] focus:ring-[#1D9E75] w-4 h-4"
+                        />
+                      </td>
                       <td className="p-2">
                         <input 
                           type="text" 
@@ -326,6 +568,18 @@ export default function WorkAnalysisScreen({
                           className="w-36 h-8 px-1 border border-[#D3D1C7] rounded text-xs focus:outline-none"
                           placeholder="Site name"
                         />
+                      </td>
+                      <td className="p-2">
+                        <select
+                          value={site.mrRef || ''}
+                          onChange={(e) => handleSiteFieldChange(index, 'mrRef', e.target.value)}
+                          className="w-28 h-8 px-1 border border-[#D3D1C7] rounded text-xs focus:outline-none bg-white"
+                        >
+                          <option value="">Select MR...</option>
+                          {mrs.map(m => (
+                            <option key={m.mrNumber} value={m.mrNumber}>{m.mrNumber}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="p-2">
                         <input 
@@ -565,11 +819,19 @@ export default function WorkAnalysisScreen({
 
         <div className="flex items-center gap-3">
           <button
-            id="wa-save-draft-btn"
-            onClick={handleSave}
+            id="wa-save-close-btn"
+            onClick={() => handleSave('close')}
             className="flex items-center gap-1 px-4 py-2 border border-[#D3D1C7] bg-white hover:bg-[#F1EFE8] text-[#2C2C2A] rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
           >
-            Save analysis draft
+            Save and Close
+          </button>
+          
+          <button
+            id="wa-save-new-btn"
+            onClick={() => handleSave('new')}
+            className="flex items-center gap-1 px-4 py-2 border border-[#D3D1C7] bg-white hover:bg-[#F1EFE8] text-[#2C2C2A] rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
+          >
+            Save and New
           </button>
           
           <button

@@ -15,7 +15,9 @@ import {
   UserCheck,
   ShieldAlert,
   Navigation,
-  PackageCheck
+  PackageCheck,
+  FolderOpen,
+  BarChart
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,11 +34,24 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
       group: 'Core Operations'
     },
     {
+      id: 'projects',
+      label: 'Projects',
+      icon: FolderOpen,
+      group: 'Core Operations'
+    },
+     {
+      id: 'sites',
+      label: 'Sites & clusters',
+      icon: MapPin,
+      group: 'Core Operations'
+    },
+    {
       id: 'mr',
       label: 'Transport requests (MR)',
       icon: FileText,
       group: 'Core Operations'
     },
+   
     {
       id: 'work-analysis',
       label: 'Work analysis',
@@ -56,8 +71,8 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
       group: 'Planning & Analysis'
     },
     {
-      id: 'suppliers',
-      label: 'Suppliers',
+      id: 'contacts',
+      label: 'Contacts',
       icon: Users,
       group: 'Asset & Partner Management'
     },
@@ -80,26 +95,8 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
       group: 'Asset & Partner Management'
     },
     {
-      id: 'sites',
-      label: 'Sites & clusters',
-      icon: MapPin,
-      group: 'Master Data & Config'
-    },
-    {
-      id: 'categories',
-      label: 'Item categories',
-      icon: Layers,
-      group: 'Master Data & Config'
-    },
-    {
-      id: 'price-book',
-      label: 'Price Book',
-      icon: BookOpen,
-      group: 'Master Data & Config'
-    },
-    {
       id: 'item-tracking',
-      label: 'Item Tracking & POD',
+      label: 'Proof of Delivery',
       icon: Truck,
       group: 'Execution & Closure'
     },
@@ -128,6 +125,12 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
       group: 'Execution & Closure'
     },
     {
+      id: 'reporting',
+      label: 'Reporting & Analytics',
+      icon: BarChart,
+      group: 'Reporting'
+    },
+    {
       id: 'settings',
       label: 'Configuration',
       icon: Settings,
@@ -142,6 +145,7 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
     'Asset & Partner Management',
     'Master Data & Config',
     'Execution & Closure',
+    'Reporting',
     'System Management'
   ];
 
