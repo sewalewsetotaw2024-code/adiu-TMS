@@ -34,146 +34,223 @@ function useProjection(points: { latitude: number; longitude: number }[], W: num
 // --- SUB COMPONENTS ---
 
 const LiveGPSDashboard = ({ activeTrip, tracking }: { activeTrip: TripTracking, tracking: TripTracking[] }) => {
-  const [selectedMarker, setSelectedMarker] = useState<string | null>(activeTrip.mrRef);
+  const [selectedTripId, setSelectedTripId] = useState<string>(activeTrip.mrRef);
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
 
   const W = 800, H = 400, PAD = 40;
-  
-  // Show all active trips on map, or just the active one
   const allPoints = tracking.flatMap(t => [...t.plannedRoute, { latitude: t.currentLat, longitude: t.currentLng }]);
   const project = useProjection(allPoints, W, H, PAD);
 
-  const tripToDisplay = tracking.find(t => t.mrRef === selectedMarker) || activeTrip;
-  
-  // Draw route for the selected trip
-  const routePoints = tripToDisplay.plannedRoute.slice().sort((a, b) => a.sequence - b.sequence);
+  const selectedTrip = tracking.find(t => t.mrRef === selectedTripId) || activeTrip;
+  const routePoints = selectedTrip.plannedRoute.slice().sort((a, b) => a.sequence - b.sequence);
   const pathD = routePoints.map((p, idx) => {
     const { x, y } = project(p.latitude, p.longitude);
     return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
   }).join(' ');
 
-  // Mock Info Data
-  const mockSpeed = tripToDisplay.tripStatus === 'Active' ? Math.floor(Math.random() * 20 + 40) : 0;
+  const mockSpeed = selectedTrip.tripStatus === 'Active' ? Math.floor(Math.random() * 20 + 40) : 0;
   const mockEta = '2h 15m';
   const mockDist = '85 km';
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
-       {/* Map Area */}
-       <div className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden relative">
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full min-h-[400px]">
-             {/* Map Grid Pattern */}
-             <defs>
-               <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                 <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E2E8F0" strokeWidth="0.5"/>
-               </pattern>
-             </defs>
-             <rect width={W} height={H} fill="url(#grid)" />
+    <div className="space-y-6">
+      {viewMode === 'list' ? (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Live GPS Trip List</h2>
+              <p className="text-xs text-slate-500">Select a trip and open its detail page.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setViewMode('detail')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1976D2] text-white rounded-xl text-xs font-semibold hover:bg-[#0D47A1]"
+            >
+              View Selected Details
+            </button>
+          </div>
 
-             {/* Planned Route Line */}
-             <path d={pathD} fill="none" stroke="#1976D2" strokeWidth={4} strokeDasharray="8 6" opacity={0.6} strokeLinecap="round" strokeLinejoin="round" />
-             
-             {/* Checkpoints */}
-             {routePoints.map(p => {
-               const { x, y } = project(p.latitude, p.longitude);
-               const isWh = p.type === 'Warehouse';
-               return (
-                 <g key={p.id}>
-                   <circle cx={x} cy={y} r={isWh ? 8 : 5} fill={isWh ? '#0D47A1' : '#64748B'} stroke="#fff" strokeWidth={2} />
-                   <text x={x} y={y + 16} textAnchor="middle" fontSize="10" fill="#475569" fontWeight="600">{p.label}</text>
-                 </g>
-               );
-             })}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
+                <tr>
+                  <th className="px-4 py-3">Trip</th>
+                  <th className="px-4 py-3">Vehicle / Driver</th>
+                  <th className="px-4 py-3">Connectivity</th>
+                  <th className="px-4 py-3">Alerts</th>
+                  <th className="px-4 py-3">Last Update</th>
+                  <th className="px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 text-sm text-slate-700">
+                {tracking.map(trip => {
+                  const isSelected = trip.mrRef === selectedTripId;
+                  const hasDeviation = trip.alerts.some(a => a.type === 'Route Deviation' && !a.acknowledged);
+                  return (
+                    <tr key={trip.mrRef} className={`${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50'} transition-colors`}>
+                      <td className="px-4 py-4 font-semibold">{trip.mrRef}</td>
+                      <td className="px-4 py-4">
+                        <div className="font-semibold text-slate-900">{trip.vehiclePlate}</div>
+                        <div className="text-[11px] text-slate-500">{trip.driver}</div>
+                      </td>
+                      <td className="px-4 py-4 text-slate-600">{trip.connectivity}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2 inline-flex text-[10px] font-semibold uppercase rounded-full ${hasDeviation ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                          {trip.alerts.filter(a => !a.acknowledged).length} unresolved
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 font-mono text-[11px] text-slate-500">{new Date(trip.lastUpdateTime).toLocaleTimeString()}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedTripId(trip.mrRef); setViewMode('detail'); }}
+                            className="px-3 py-2 rounded-xl bg-[#1976D2] text-white text-xs font-semibold hover:bg-[#0D47A1]"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTripId(trip.mrRef)}
+                            className={`px-3 py-2 rounded-xl text-xs font-semibold ${isSelected ? 'bg-slate-200 text-slate-800' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                          >
+                            Select
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Trip Details</h2>
+              <p className="text-xs text-slate-500">Live route and status details for the selected trip.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-200"
+            >
+              Back to List
+            </button>
+          </div>
 
-             {/* Vehicle Markers */}
-             {tracking.filter(t => t.tripStatus !== 'Completed').map(t => {
-               const pos = project(t.currentLat, t.currentLng);
-               const isSelected = selectedMarker === t.mrRef;
-               const hasDeviation = t.alerts.some(a => a.type === 'Route Deviation' && !a.acknowledged);
-               const color = hasDeviation ? '#DC2626' : (t.connectivity === 'Online' ? '#10B981' : '#94A3B8');
-               
-               return (
-                 <g key={t.mrRef} onClick={() => setSelectedMarker(t.mrRef)} style={{cursor: 'pointer'}}>
-                   {isSelected && (
-                     <circle cx={pos.x} cy={pos.y} r={16} fill={color} opacity={0.2}>
-                       <animate attributeName="r" values="16;24;16" dur="2s" repeatCount="indefinite" />
-                     </circle>
-                   )}
-                   <circle cx={pos.x} cy={pos.y} r={8} fill={color} stroke="#fff" strokeWidth={2} />
-                   <path d={`M${pos.x-4},${pos.y-2} L${pos.x+4},${pos.y-2} L${pos.x},${pos.y+4} Z`} fill="#fff" />
-                 </g>
-               );
-             })}
-          </svg>
+          <div className="grid gap-6 lg:grid-cols-[1.6fr_0.9fr]">
+            <div className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+              <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full min-h-[400px]">
+                <defs>
+                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E2E8F0" strokeWidth="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width={W} height={H} fill="url(#grid)" />
+                <path d={pathD} fill="none" stroke="#1976D2" strokeWidth={4} strokeDasharray="8 6" opacity={0.6} strokeLinecap="round" strokeLinejoin="round" />
+                {routePoints.map(p => {
+                  const { x, y } = project(p.latitude, p.longitude);
+                  const isWh = p.type === 'Warehouse';
+                  return (
+                    <g key={p.id}>
+                      <circle cx={x} cy={y} r={isWh ? 8 : 5} fill={isWh ? '#0D47A1' : '#64748B'} stroke="#fff" strokeWidth={2} />
+                      <text x={x} y={y + 16} textAnchor="middle" fontSize="10" fill="#475569" fontWeight="600">{p.label}</text>
+                    </g>
+                  );
+                })}
+                <g>
+                  {(() => {
+                    const pos = project(selectedTrip.currentLat, selectedTrip.currentLng);
+                    const hasDeviation = selectedTrip.alerts.some(a => a.type === 'Route Deviation' && !a.acknowledged);
+                    const color = hasDeviation ? '#DC2626' : (selectedTrip.connectivity === 'Online' ? '#10B981' : '#94A3B8');
+                    return (
+                      <>
+                        <circle cx={pos.x} cy={pos.y} r={16} fill={color} opacity={0.2} />
+                        <circle cx={pos.x} cy={pos.y} r={8} fill={color} stroke="#fff" strokeWidth={2} />
+                        <path d={`M${pos.x-4},${pos.y-2} L${pos.x+4},${pos.y-2} L${pos.x},${pos.y+4} Z`} fill="#fff" />
+                      </>
+                    );
+                  })()}
+                </g>
+              </svg>
+            </div>
 
-          {/* Overlays */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2">
-            <div className="bg-white/90 backdrop-blur px-3 py-2 rounded-lg shadow-sm border border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" /> Online
-              <span className="w-2 h-2 rounded-full bg-slate-400 ml-2" /> Offline
-              <span className="w-2 h-2 rounded-full bg-red-500 ml-2" /> Alert
+            <div className="space-y-4">
+              <div className="bg-white border border-[#1976D2]/30 rounded-2xl shadow-md p-5">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-[#1976D2] tracking-wider mb-1">Trip Summary</div>
+                    <h3 className="text-xl font-black text-slate-800">{selectedTrip.mrRef}</h3>
+                  </div>
+                  <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${selectedTrip.tripStatus === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                    {selectedTrip.tripStatus}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#1976D2]">
+                      <Truck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-slate-800">{selectedTrip.vehiclePlate}</div>
+                      <div className="text-xs text-slate-500">{selectedTrip.driver}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><Activity className="w-3 h-3"/> Speed</div>
+                      <div className="text-sm font-bold text-slate-800">{mockSpeed} km/h</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><Clock className="w-3 h-3"/> ETA</div>
+                      <div className="text-sm font-bold text-slate-800">{mockEta}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><Route className="w-3 h-3"/> Remaining</div>
+                      <div className="text-sm font-bold text-slate-800">{mockDist}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><BatteryCharging className="w-3 h-3"/> Device</div>
+                      <div className="text-sm font-bold text-slate-800 flex items-center gap-1">87% <SignalHigh className="w-3 h-3 text-emerald-500"/></div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">GPS Coordinates</div>
+                    <div className="text-xs font-mono bg-slate-50 p-2 rounded border border-slate-200 text-slate-600">
+                      {selectedTrip.currentLat.toFixed(5)}, {selectedTrip.currentLng.toFixed(5)}
+                    </div>
+                    <div className="text-[9px] text-slate-400 mt-1 text-right">
+                      Updated {new Date(selectedTrip.lastUpdateTime).toLocaleTimeString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
+                <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-3">Route checkpoints</h4>
+                <div className="space-y-3">
+                  {routePoints.map(point => (
+                    <div key={point.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-800">
+                        <span>{point.sequence}. {point.label}</span>
+                        <span className="text-[10px] uppercase text-slate-500">{point.type}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-       </div>
-
-       {/* Info Card Panel */}
-       <div className="w-full lg:w-80 flex flex-col gap-4">
-          <div className="bg-white border border-[#1976D2]/30 shadow-md shadow-blue-900/5 rounded-2xl p-5 relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#0D47A1] to-[#1976D2]" />
-             
-             <div className="flex justify-between items-start mb-4">
-               <div>
-                 <div className="text-[10px] uppercase font-bold text-[#1976D2] tracking-wider mb-1">Trip Details</div>
-                 <h2 className="text-lg font-black text-slate-800">{tripToDisplay.mrRef}</h2>
-               </div>
-               <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${tripToDisplay.tripStatus === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                 {tripToDisplay.tripStatus}
-               </div>
-             </div>
-
-             <div className="space-y-4">
-               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#1976D2]">
-                   <Truck className="w-5 h-5" />
-                 </div>
-                 <div>
-                   <div className="text-sm font-bold text-slate-800">{tripToDisplay.vehiclePlate}</div>
-                   <div className="text-xs text-slate-500">{tripToDisplay.driver}</div>
-                 </div>
-               </div>
-
-               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-                 <div>
-                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><Activity className="w-3 h-3"/> Speed</div>
-                   <div className="text-sm font-bold text-slate-800">{mockSpeed} km/h</div>
-                 </div>
-                 <div>
-                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><Clock className="w-3 h-3"/> ETA</div>
-                   <div className="text-sm font-bold text-slate-800">{mockEta}</div>
-                 </div>
-                 <div>
-                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><Route className="w-3 h-3"/> Remaining</div>
-                   <div className="text-sm font-bold text-slate-800">{mockDist}</div>
-                 </div>
-                 <div>
-                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1"><BatteryCharging className="w-3 h-3"/> Device</div>
-                   <div className="text-sm font-bold text-slate-800 flex items-center gap-1">87% <SignalHigh className="w-3 h-3 text-emerald-500"/></div>
-                 </div>
-               </div>
-
-               <div className="pt-4 border-t border-slate-100">
-                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">GPS Coordinates</div>
-                 <div className="text-xs font-mono bg-slate-50 p-2 rounded border border-slate-200 text-slate-600">
-                   {tripToDisplay.currentLat.toFixed(5)}, {tripToDisplay.currentLng.toFixed(5)}
-                 </div>
-                 <div className="text-[9px] text-slate-400 mt-1 text-right">
-                   Updated {new Date(tripToDisplay.lastUpdateTime).toLocaleTimeString()}
-                 </div>
-               </div>
-             </div>
-          </div>
-       </div>
+        </div>
+      )}
     </div>
-  )
+  );
 };
 
 const RoutePlanningScreen = ({ activeTrip }: { activeTrip: TripTracking }) => {
