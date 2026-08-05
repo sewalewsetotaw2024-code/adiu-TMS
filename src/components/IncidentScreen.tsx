@@ -28,7 +28,7 @@ interface IncidentScreenProps {
 
 const CURRENT_USER = 'Solomon Tekle';
 
-const TYPES: Incident['type'][] = ['Theft', 'Loss', 'Damage', 'Delay', 'Route Deviation', 'Compliance Breach', 'Documentation Discrepancy'];
+const TYPES: Incident['type'][] = ['Theft', 'Loss', 'Missing','Damage', 'Delay', 'Route Deviation', 'Compliance Breach', 'Documentation Discrepancy'];
 const SEVERITIES: Incident['severity'][] = ['Low', 'Medium', 'High', 'Critical'];
 const ASSIGNED_ROLES: Incident['assignedRole'][] = ['Security', 'Transport', 'QEHS', 'Supplier Focal', 'Other'];
 

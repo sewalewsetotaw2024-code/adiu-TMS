@@ -491,6 +491,10 @@ export interface TransportRequestItem {
   proofOfDeliveryPhotoUrl?: string;
   proofOfDeliveryPhotoUrls?: string[];
 
+  // issue reporting
+  issueReported?: boolean;
+  issueDescription?: string;
+
   // last-mile delivery request workflow
   lastMileDeliveryRequested?: boolean;
   lastMileSiteId?: string;

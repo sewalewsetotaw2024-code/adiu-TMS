@@ -66,6 +66,11 @@ export default function ItemTrackingScreen({
   const [paymentRequestNotes, setPaymentRequestNotes] = useState<string>('');
   const [paymentProofDocumentUrl, setPaymentProofDocumentUrl] = useState<string>('');
 
+  const [issueReported, setIssueReported] = useState<boolean>(false);
+  const [issueDescription, setIssueDescription] = useState<string>('');
+
+  const hasAnyIssues = useMemo(() => itemsState.some(i => i.damagedQuantity > 0 || i.missingQuantity > 0), [itemsState]);
+
   // Initialize local state when trip changes
   React.useEffect(() => {
     if (trip) {
@@ -81,6 +86,8 @@ export default function ItemTrackingScreen({
       setPaymentRequestStatus(trip.paymentRequestStatus || 'Not requested');
       setPaymentRequestNotes(trip.paymentRequestNotes || '');
       setPaymentProofDocumentUrl(trip.paymentProofDocumentUrl || '');
+      setIssueReported(Boolean(trip.issueReported));
+      setIssueDescription(trip.issueDescription || '');
     } else {
       setItemsState([]);
       setPhotoUrls([]);
@@ -94,6 +101,8 @@ export default function ItemTrackingScreen({
       setPaymentRequestStatus('Not requested');
       setPaymentRequestNotes('');
       setPaymentProofDocumentUrl('');
+      setIssueReported(false);
+      setIssueDescription('');
     }
   }, [trip]);
 
@@ -216,7 +225,9 @@ export default function ItemTrackingScreen({
       paymentAmount: paymentAmount || trip.paymentAmount,
       paymentRequestStatus,
       paymentRequestNotes,
-      paymentProofDocumentUrl
+      paymentProofDocumentUrl,
+      issueReported: hasAnyIssues ? issueReported : false,
+      issueDescription: hasAnyIssues ? issueDescription : ''
     };
     onSaveItemTracking(updatedTrip);
     alert('Proof of Delivery saved successfully.');
@@ -681,6 +692,43 @@ export default function ItemTrackingScreen({
               )}
             </div>
           </div>
+
+          {/* Issue Reporting (Shown if items have damaged/missing quantities) */}
+          {hasAnyIssues && (
+            <div className="bg-white rounded-xl border border-orange-200 shadow-sm overflow-hidden p-6 animate-in fade-in zoom-in-95">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-orange-800 flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" /> Delivery Issues Detected
+                  </h3>
+                  <p className="text-sm text-orange-700/80 mt-1">Some items have been marked as damaged or missing. Please provide details.</p>
+                </div>
+                <label className="inline-flex items-center gap-2 text-sm font-semibold text-orange-900 bg-orange-50 px-4 py-2 rounded-lg border border-orange-100 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={issueReported}
+                    onChange={(e) => setIssueReported(e.target.checked)}
+                    className="h-4 w-4 rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+                  />
+                  Report Issue
+                </label>
+              </div>
+
+              {issueReported && (
+                <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-semibold text-gray-700">Issue Description <span className="text-red-500">*</span></label>
+                    <textarea
+                      value={issueDescription}
+                      onChange={(e) => setIssueDescription(e.target.value)}
+                      placeholder="Please describe the damage, missing items, or any other discrepancies..."
+                      className="min-h-[120px] px-4 py-3 border border-orange-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Last Mile Delivery Request */}
           <div className="bg-white rounded-xl border border-[#E5E2D9] shadow-sm overflow-hidden p-6">
