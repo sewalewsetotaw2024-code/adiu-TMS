@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { TripTracking, TripMilestone, TripMilestoneStatus, GeofenceEvent, TripAlert, RouteCheckpoint } from '../types';
 import {
   Navigation, MapPin, Clock, Upload, Check, AlertTriangle, Wifi, WifiOff,
@@ -31,24 +31,60 @@ function useProjection(points: { latitude: number; longitude: number }[], W: num
   }, [points, W, H, pad]);
 }
 
+type RouteGroup = {
+  key: string;
+  origin: string;
+  destination: string;
+  trips: TripTracking[];
+};
+
+function getRouteKey(trip: TripTracking) {
+  const origin = trip.plannedRoute[0]?.label || 'Origin';
+  const destination = trip.plannedRoute.slice(-1)[0]?.label || 'Destination';
+  return `${origin} → ${destination}`;
+}
+
+function getRouteGroups(tracking: TripTracking[]): RouteGroup[] {
+  const groups: Record<string, RouteGroup> = {};
+  tracking.forEach(trip => {
+    const origin = trip.plannedRoute[0]?.label || 'Origin';
+    const destination = trip.plannedRoute.slice(-1)[0]?.label || 'Destination';
+    const key = `${origin} → ${destination}`;
+    if (!groups[key]) {
+      groups[key] = { key, origin, destination, trips: [] };
+    }
+    groups[key].trips.push(trip);
+  });
+  return Object.values(groups);
+}
+
 // --- SUB COMPONENTS ---
 
-const LiveGPSDashboard = ({ activeTrip, tracking }: { activeTrip: TripTracking, tracking: TripTracking[] }) => {
-  const [selectedTripId, setSelectedTripId] = useState<string>(activeTrip.mrRef);
+const LiveGPSDashboard = ({
+  tracking,
+  routeGroups,
+}: {
+  tracking: TripTracking[];
+  routeGroups: RouteGroup[];
+}) => {
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+  const [selectedRouteKey, setSelectedRouteKey] = useState<string>(routeGroups[0]?.key || '');
+  const [selectedTripId, setSelectedTripId] = useState<string>(routeGroups[0]?.trips[0]?.mrRef || tracking[0]?.mrRef || '');
+  
+  const selectedRouteGroup = routeGroups.find(g => g.key === selectedRouteKey) || routeGroups[0] || { key: '', origin: '', destination: '', trips: [] };
+  const selectedTrip = tracking.find(t => t.mrRef === selectedTripId) || tracking[0] || ({} as TripTracking);
 
   const W = 800, H = 400, PAD = 40;
   const allPoints = tracking.flatMap(t => [...t.plannedRoute, { latitude: t.currentLat, longitude: t.currentLng }]);
   const project = useProjection(allPoints, W, H, PAD);
 
-  const selectedTrip = tracking.find(t => t.mrRef === selectedTripId) || activeTrip;
-  const routePoints = selectedTrip.plannedRoute.slice().sort((a, b) => a.sequence - b.sequence);
+  const routePoints = selectedTrip?.plannedRoute.slice().sort((a, b) => a.sequence - b.sequence) || [];
   const pathD = routePoints.map((p, idx) => {
     const { x, y } = project(p.latitude, p.longitude);
     return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
   }).join(' ');
 
-  const mockSpeed = selectedTrip.tripStatus === 'Active' ? Math.floor(Math.random() * 20 + 40) : 0;
+  const mockSpeed = selectedTrip?.tripStatus === 'Active' ? Math.floor(Math.random() * 20 + 40) : 0;
   const mockEta = '2h 15m';
   const mockDist = '85 km';
 
@@ -58,67 +94,72 @@ const LiveGPSDashboard = ({ activeTrip, tracking }: { activeTrip: TripTracking, 
         <div className="space-y-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Live GPS Trip List</h2>
-              <p className="text-xs text-slate-500">Select a trip and open its detail page.</p>
+              <h2 className="text-lg font-bold text-slate-800">Live GPS by Route</h2>
+              <p className="text-xs text-slate-500">Choose a route and review the trips within it.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setViewMode('detail')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1976D2] text-white rounded-xl text-xs font-semibold hover:bg-[#0D47A1]"
-            >
-              View Selected Details
-            </button>
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
                 <tr>
+                  <th className="px-4 py-3">Route</th>
                   <th className="px-4 py-3">Trip</th>
                   <th className="px-4 py-3">Vehicle / Driver</th>
                   <th className="px-4 py-3">Connectivity</th>
                   <th className="px-4 py-3">Alerts</th>
-                  <th className="px-4 py-3">Last Update</th>
                   <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 text-sm text-slate-700">
-                {tracking.map(trip => {
-                  const isSelected = trip.mrRef === selectedTripId;
-                  const hasDeviation = trip.alerts.some(a => a.type === 'Route Deviation' && !a.acknowledged);
+              <tbody className="text-sm text-slate-700">
+                {routeGroups.map(group => {
+                  const isRouteSelected = group.key === selectedRouteKey;
                   return (
-                    <tr key={trip.mrRef} className={`${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50'} transition-colors`}>
-                      <td className="px-4 py-4 font-semibold">{trip.mrRef}</td>
-                      <td className="px-4 py-4">
-                        <div className="font-semibold text-slate-900">{trip.vehiclePlate}</div>
-                        <div className="text-[11px] text-slate-500">{trip.driver}</div>
-                      </td>
-                      <td className="px-4 py-4 text-slate-600">{trip.connectivity}</td>
-                      <td className="px-4 py-4">
-                        <span className={`px-2 inline-flex text-[10px] font-semibold uppercase rounded-full ${hasDeviation ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                          {trip.alerts.filter(a => !a.acknowledged).length} unresolved
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 font-mono text-[11px] text-slate-500">{new Date(trip.lastUpdateTime).toLocaleTimeString()}</td>
-                      <td className="px-4 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => { setSelectedTripId(trip.mrRef); setViewMode('detail'); }}
-                            className="px-3 py-2 rounded-xl bg-[#1976D2] text-white text-xs font-semibold hover:bg-[#0D47A1]"
-                          >
-                            View Details
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedTripId(trip.mrRef)}
-                            className={`px-3 py-2 rounded-xl text-xs font-semibold ${isSelected ? 'bg-slate-200 text-slate-800' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                          >
-                            Select
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                    <React.Fragment key={group.key}>
+                      <tr className="bg-slate-100 border-b border-slate-200" >
+                        <td colSpan={5} className="px-4 py-4">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Route</div>
+                              <div className="text-sm font-bold text-slate-900">{group.key}</div>
+                              <div className="text-[11px] text-slate-500 mt-1">{group.trips.length} trips on this route</div>
+                            </div>
+                            <div className="px-3 py-2 rounded-xl bg-slate-100 text-xs font-semibold text-slate-600">
+                              {group.trips.length} trips in route
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      {group.trips.map(trip => {
+                        const isSelected = trip.mrRef === selectedTripId;
+                        const hasDeviation = trip.alerts.some(a => a.type === 'Route Deviation' && !a.acknowledged);
+                        return (
+                          <tr key={trip.mrRef} className={`${isSelected ? 'bg-blue-50' : 'hover:bg-slate-50'} border-b border-slate-200 transition-colors`}>
+                            <td className="px-4 py-3 text-[11px] text-slate-500">{group.key}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-900">{trip.mrRef}</td>
+                            <td className="px-4 py-3">
+                              <div className="font-semibold text-slate-900">{trip.vehiclePlate}</div>
+                              <div className="text-[11px] text-slate-500">{trip.driver}</div>
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">{trip.connectivity}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 inline-flex text-[10px] font-semibold uppercase rounded-full ${hasDeviation ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                                {trip.alerts.filter(a => !a.acknowledged).length} unresolved
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => { setSelectedTripId(trip.mrRef); setViewMode('detail'); }}
+                                  className="px-3 py-2 rounded-xl bg-[#1976D2] text-white text-xs font-semibold hover:bg-[#0D47A1]"
+                                >
+                                  View Details
+                                </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -253,15 +294,15 @@ const LiveGPSDashboard = ({ activeTrip, tracking }: { activeTrip: TripTracking, 
   );
 };
 
-const RoutePlanningScreen = ({ activeTrip }: { activeTrip: TripTracking }) => {
-  const origin = activeTrip.plannedRoute.find(p => p.sequence === 1)?.label || 'Origin';
-  const dest = activeTrip.plannedRoute.slice(-1)[0]?.label || 'Destination';
+const RoutePlanningScreen = ({ routeGroup, selectedTrip }: { routeGroup: RouteGroup; selectedTrip: TripTracking }) => {
+  const origin = routeGroup.origin;
+  const dest = routeGroup.destination;
 
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Route className="text-[#1976D2] w-5 h-5"/> Route Planning: {activeTrip.mrRef}</h2>
+          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Route className="text-[#1976D2] w-5 h-5"/> Route Planning: {selectedTrip.mrRef}</h2>
           <p className="text-xs text-slate-500">Configure checkpoints and expected timelines</p>
         </div>
         <div className="flex gap-2">
@@ -272,6 +313,14 @@ const RoutePlanningScreen = ({ activeTrip }: { activeTrip: TripTracking }) => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
         <div>
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Route</div>
+          <div className="text-sm font-bold text-slate-800 truncate">{routeGroup.key}</div>
+        </div>
+        <div>
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Trips on Route</div>
+          <div className="text-sm font-bold text-slate-800 truncate">{routeGroup.trips.length}</div>
+        </div>
+        <div>
           <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Origin</div>
           <div className="text-sm font-bold text-slate-800 truncate">{origin}</div>
         </div>
@@ -279,50 +328,32 @@ const RoutePlanningScreen = ({ activeTrip }: { activeTrip: TripTracking }) => {
           <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Destination</div>
           <div className="text-sm font-bold text-slate-800 truncate">{dest}</div>
         </div>
-        <div>
-          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Planned Distance</div>
-          <div className="text-sm font-bold text-slate-800">142 km</div>
-        </div>
-        <div>
-          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Est. Travel Time</div>
-          <div className="text-sm font-bold text-slate-800">4h 30m</div>
-        </div>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="p-5 border-b border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700">
+          Trips for this route
+        </div>
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
             <tr>
-              <th className="px-6 py-3">Seq</th>
-              <th className="px-6 py-3">Checkpoint Location</th>
-              <th className="px-6 py-3">Zone Type</th>
-              <th className="px-6 py-3">Planned Arrival</th>
-              <th className="px-6 py-3">Actual / Status</th>
+              <th className="px-6 py-3">Trip ID</th>
+              <th className="px-6 py-3">Vehicle</th>
+              <th className="px-6 py-3">Driver</th>
+              <th className="px-6 py-3">Status</th>
+              <th className="px-6 py-3">Last Update</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {activeTrip.plannedRoute.slice().sort((a, b) => a.sequence - b.sequence).map(p => {
-              const isPast = activeTrip.plannedRoute.findIndex(r => r.id === activeTrip.lastCheckpointId) >= activeTrip.plannedRoute.findIndex(r => r.id === p.id);
-              return (
-                <tr key={p.id} className="hover:bg-slate-50/50">
-                  <td className="px-6 py-4 font-bold text-slate-400">{p.sequence}</td>
-                  <td className="px-6 py-4 font-semibold text-slate-800">{p.label}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">{p.type}</span>
-                  </td>
-                  <td className="px-6 py-4 text-slate-600 text-xs">
-                    {p.plannedArrival ? new Date(p.plannedArrival).toLocaleString() : 'TBD'}
-                  </td>
-                  <td className="px-6 py-4">
-                    {isPast ? (
-                      <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">Reached</span>
-                    ) : (
-                      <span className="text-xs font-bold text-slate-400">Pending</span>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
+            {routeGroup.trips.map(trip => (
+              <tr key={trip.mrRef} className={`${trip.mrRef === selectedTrip.mrRef ? 'bg-blue-50' : 'hover:bg-slate-50/50'}`}>
+                <td className="px-6 py-4 font-semibold text-slate-800">{trip.mrRef}</td>
+                <td className="px-6 py-4 text-slate-700">{trip.vehiclePlate}</td>
+                <td className="px-6 py-4 text-slate-700">{trip.driver}</td>
+                <td className="px-6 py-4 text-slate-700">{trip.tripStatus}</td>
+                <td className="px-6 py-4 text-slate-500 text-xs">{new Date(trip.lastUpdateTime).toLocaleTimeString()}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -331,14 +362,19 @@ const RoutePlanningScreen = ({ activeTrip }: { activeTrip: TripTracking }) => {
   );
 };
 
-const GeofenceDashboard = ({ tracking }: { tracking: TripTracking[] }) => {
-  const allEvents = tracking.flatMap(t => t.geofenceEvents.map(e => ({...e, tripId: t.mrRef}))).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+const GeofenceDashboard = ({ tracking, routeGroups, selectedRouteKey }: { tracking: TripTracking[]; routeGroups: RouteGroup[]; selectedRouteKey: string }) => {
+  const selectedRouteGroup = routeGroups.find(group => group.key === selectedRouteKey);
+  const tripIds = new Set(selectedRouteGroup?.trips.map(t => t.mrRef) || []);
+  const allEvents = tracking
+    .flatMap(t => t.geofenceEvents.map(e => ({ ...e, tripId: t.mrRef })))
+    .filter(ev => tripIds.has(ev.tripId))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><MapPin className="text-purple-600 w-5 h-5"/> Geofence Monitoring Dashboard</h2>
-        <p className="text-xs text-slate-500">Global view of boundary entries and exits</p>
+        <p className="text-xs text-slate-500">Route-focused boundary entries and exits for {selectedRouteGroup?.key || 'all active routes'}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -385,9 +421,13 @@ const GeofenceDashboard = ({ tracking }: { tracking: TripTracking[] }) => {
   );
 };
 
-const AlertsDashboard = ({ tracking, onAcknowledge }: { tracking: TripTracking[], onAcknowledge: (alertId: string, tripId: string) => void }) => {
-  const allAlerts = tracking.flatMap(t => t.alerts.map(a => ({...a, tripId: t.mrRef, driver: t.driver, vehiclePlate: t.vehiclePlate})))
-                            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+const AlertsDashboard = ({ tracking, routeGroups, selectedRouteKey, onAcknowledge }: { tracking: TripTracking[]; routeGroups: RouteGroup[]; selectedRouteKey: string; onAcknowledge: (alertId: string, tripId: string) => void }) => {
+  const selectedRouteGroup = routeGroups.find(group => group.key === selectedRouteKey);
+  const tripIds = new Set(selectedRouteGroup?.trips.map(t => t.mrRef) || []);
+  const allAlerts = tracking
+    .flatMap(t => t.alerts.map(a => ({ ...a, tripId: t.mrRef, driver: t.driver, vehiclePlate: t.vehiclePlate })))
+    .filter(alert => tripIds.has(alert.tripId))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const getAlertColor = (type: string) => {
     if (type === 'Route Deviation' || type === 'Unauthorized Geofence Breach' || type === 'Driver SOS' || type === 'Vehicle Breakdown') return 'border-red-200 bg-red-50 text-red-800';
@@ -399,7 +439,7 @@ const AlertsDashboard = ({ tracking, onAcknowledge }: { tracking: TripTracking[]
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><ShieldAlert className="text-red-600 w-5 h-5"/> Operational Alerts Dashboard</h2>
-        <p className="text-xs text-slate-500">Monitor and resolve critical trip exceptions</p>
+        <p className="text-xs text-slate-500">Route-focused alerts for {selectedRouteGroup?.key || 'all active routes'}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -444,48 +484,102 @@ const AlertsDashboard = ({ tracking, onAcknowledge }: { tracking: TripTracking[]
   );
 };
 
-const TripTimeline = ({ activeTrip }: { activeTrip: TripTracking }) => {
-  return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="text-center">
-        <h2 className="text-lg font-bold text-slate-800">Trip Lifecycle Timeline</h2>
-        <p className="text-xs text-slate-500">{activeTrip.mrRef} • {activeTrip.vehiclePlate}</p>
-      </div>
+const TripTimeline = ({ routeGroups, selectedRouteKey }: { routeGroups: RouteGroup[]; selectedRouteKey: string }) => {
+  const [expandedTripId, setExpandedTripId] = useState<string | null>(null);
+  const selectedRouteGroup = routeGroups.find(group => group.key === selectedRouteKey);
+  
+  if (!selectedRouteGroup || selectedRouteGroup.trips.length === 0) {
+    return <div className="text-slate-500 text-center py-8">No trips found for this route.</div>;
+  }
 
-      <div className="relative pl-8 pt-4 pb-8 space-y-8">
-        {/* Vertical Line */}
-        <div className="absolute left-10 top-8 bottom-8 w-1 bg-slate-100 rounded-full" />
-        
-        {activeTrip.milestones.map((m, i) => {
-          const isCompleted = m.status === 'Delivered' || m.status === 'Returned';
-          return (
-            <div key={m.id} className="relative z-10 flex gap-6 items-start">
-              <div className={`w-5 h-5 rounded-full flex-shrink-0 mt-1 border-4 border-white shadow-sm ${isCompleted ? 'bg-emerald-500' : 'bg-[#1976D2]'}`} />
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex-1">
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-black text-sm text-slate-800 uppercase tracking-wide">{m.status}</h3>
-                  <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100">{new Date(m.timestamp).toLocaleString()}</span>
-                </div>
-                <div className="text-xs text-slate-500 font-medium mb-2">Logged by: {m.user}</div>
-                {m.note && <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 italic">"{m.note}"</p>}
-                {m.photoUrl && (
-                  <div className="mt-3">
-                    <img src={m.photoUrl} alt="Milestone proof" className="h-24 rounded-lg border border-slate-200 shadow-sm object-cover" />
+  const activeTrip = expandedTripId ? selectedRouteGroup.trips.find(t => t.mrRef === expandedTripId) : null;
+
+  if (activeTrip) {
+    return (
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => setExpandedTripId(null)}
+            className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+          >
+            ← Back to List
+          </button>
+        </div>
+        <div className="text-center">
+          <h2 className="text-lg font-bold text-slate-800">Trip Lifecycle Timeline</h2>
+          <p className="text-xs text-slate-500">{activeTrip.mrRef} • {activeTrip.vehiclePlate}</p>
+        </div>
+
+        <div className="relative pl-8 pt-4 pb-8 space-y-8">
+          {/* Vertical Line */}
+          <div className="absolute left-10 top-8 bottom-8 w-1 bg-slate-100 rounded-full" />
+          
+          {activeTrip.milestones.map((m, i) => {
+            const isCompleted = m.status === 'Delivered' || m.status === 'Returned';
+            return (
+              <div key={m.id} className="relative z-10 flex gap-6 items-start">
+                <div className={`w-5 h-5 rounded-full flex-shrink-0 mt-1 border-4 border-white shadow-sm ${isCompleted ? 'bg-emerald-500' : 'bg-[#1976D2]'}`} />
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex-1">
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-black text-sm text-slate-800 uppercase tracking-wide">{m.status}</h3>
+                    <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100">{new Date(m.timestamp).toLocaleString()}</span>
                   </div>
-                )}
+                  <div className="text-xs text-slate-500 font-medium mb-2">Logged by: {m.user}</div>
+                  {m.note && <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 italic">"{m.note}"</p>}
+                  {m.photoUrl && (
+                    <div className="mt-3">
+                      <img src={m.photoUrl} alt="Milestone proof" className="h-24 rounded-lg border border-slate-200 shadow-sm object-cover" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {activeTrip.tripStatus !== 'Completed' && (
+             <div className="relative z-10 flex gap-6 items-start opacity-50">
+               <div className="w-5 h-5 rounded-full flex-shrink-0 mt-1 border-4 border-white bg-slate-300" />
+               <div className="bg-transparent p-4 border-2 border-dashed border-slate-200 rounded-xl flex-1 text-center">
+                 <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Awaiting Next Milestone</span>
+               </div>
+             </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-bold text-slate-800">Trips in {selectedRouteGroup.key}</h2>
+        <p className="text-xs text-slate-500">Select a trip to view its detailed timeline log.</p>
+      </div>
+      <div className="flex flex-col gap-3">
+        {selectedRouteGroup.trips.map(trip => (
+          <div key={trip.mrRef} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-[#1976D2] transition-colors group">
+            <div className="flex items-center gap-4 sm:gap-8 flex-1">
+              <div className="w-24 sm:w-32">
+                <span className="font-bold text-slate-800 text-base">{trip.mrRef}</span>
+              </div>
+              <div className="w-24 sm:w-32">
+                <span className={`px-2 py-1 text-[10px] uppercase font-bold rounded-md ${trip.tripStatus === 'Completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                  {trip.tripStatus}
+                </span>
+              </div>
+              <div className="flex-1">
+                <div className="text-sm text-slate-800 font-semibold">{trip.vehiclePlate}</div>
+                <div className="text-xs text-slate-500">{trip.driver}</div>
               </div>
             </div>
-          );
-        })}
-
-        {activeTrip.tripStatus !== 'Completed' && (
-           <div className="relative z-10 flex gap-6 items-start opacity-50">
-             <div className="w-5 h-5 rounded-full flex-shrink-0 mt-1 border-4 border-white bg-slate-300" />
-             <div className="bg-transparent p-4 border-2 border-dashed border-slate-200 rounded-xl flex-1 text-center">
-               <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Awaiting Next Milestone</span>
-             </div>
-           </div>
-        )}
+            <button
+              onClick={() => setExpandedTripId(trip.mrRef)}
+              className="w-full sm:w-auto px-6 py-2 bg-slate-100 text-slate-700 group-hover:bg-[#1976D2] group-hover:text-white text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
+            >
+              View Details
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -493,9 +587,33 @@ const TripTimeline = ({ activeTrip }: { activeTrip: TripTracking }) => {
 
 export default function TrackingScreen({ tracking, onSaveTracking }: TrackingScreenProps) {
   const [selectedMrRef, setSelectedMrRef] = useState(tracking[0]?.mrRef || '');
+  const routeGroups = getRouteGroups(tracking);
+  const [selectedRouteKey, setSelectedRouteKey] = useState(routeGroups[0]?.key || '');
   const [activeTab, setActiveTab] = useState<'live' | 'planning' | 'geofence' | 'alerts' | 'timeline'>('live');
 
-  const activeTrip = tracking.find(t => t.mrRef === selectedMrRef) || tracking[0];
+  const currentRouteGroup = routeGroups.find(g => g.key === selectedRouteKey) || routeGroups[0];
+  const activeTrip = tracking.find(t => t.mrRef === selectedMrRef) || currentRouteGroup?.trips[0] || tracking[0];
+
+  useEffect(() => {
+    if (!selectedRouteKey && routeGroups[0]) {
+      setSelectedRouteKey(routeGroups[0].key);
+    }
+  }, [routeGroups, selectedRouteKey]);
+
+  useEffect(() => {
+    if (!activeTrip) return;
+    const routeKey = getRouteKey(activeTrip);
+    if (routeKey !== selectedRouteKey) {
+      setSelectedRouteKey(routeKey);
+    }
+  }, [activeTrip, selectedRouteKey]);
+
+  useEffect(() => {
+    if (!currentRouteGroup) return;
+    if (!currentRouteGroup.trips.some(trip => trip.mrRef === selectedMrRef)) {
+      setSelectedMrRef(currentRouteGroup.trips[0]?.mrRef || '');
+    }
+  }, [currentRouteGroup, selectedMrRef]);
 
   // --- KPI Calculation ---
   const activeTripsCount = tracking.filter(t => t.tripStatus === 'Active').length;
@@ -517,20 +635,13 @@ export default function TrackingScreen({ tracking, onSaveTracking }: TrackingScr
           <h1 className="text-lg font-bold text-[#0D47A1] tracking-tight">GPS Tracking Module</h1>
           <p className="text-xs text-slate-500">Live monitoring & route execution</p>
         </div>
-        <div className="flex items-center gap-4">
-           <span className="text-xs font-semibold text-slate-600">Select Trip:</span>
-           <select
-             value={selectedMrRef}
-             onChange={(e) => setSelectedMrRef(e.target.value)}
-             className="h-10 px-4 rounded-xl border border-slate-200 text-sm font-medium text-[#0D47A1] bg-blue-50/50 focus:outline-none focus:ring-2 focus:ring-[#1976D2]/50"
-           >
-             {tracking.map(t => (
-               <option key={t.mrRef} value={t.mrRef}>{t.mrRef} • {t.vehiclePlate}</option>
-             ))}
-           </select>
-           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-             <RefreshCw className="w-3 h-3 animate-spin-slow" /> Live 
-           </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="text-xs text-slate-500">
+            Route grouping is enabled and all timeline views are grouped by route.
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+            <RefreshCw className="w-3 h-3 animate-spin-slow" /> Live 
+          </div>
         </div>
       </div>
 
@@ -578,19 +689,58 @@ export default function TrackingScreen({ tracking, onSaveTracking }: TrackingScr
 
       {/* TAB CONTENTS */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[500px]">
-        {activeTab === 'live' && <LiveGPSDashboard activeTrip={activeTrip} tracking={tracking} />}
-        {activeTab === 'planning' && <RoutePlanningScreen activeTrip={activeTrip} />}
-        {activeTab === 'geofence' && <GeofenceDashboard tracking={tracking} />}
-        {activeTab === 'alerts' && <AlertsDashboard tracking={tracking} onAcknowledge={(alertId, tripId) => {
-           const trip = tracking.find(t => t.mrRef === tripId);
-           if (!trip) return;
-           const updated = {
-              ...trip,
-              alerts: trip.alerts.map(a => a.id === alertId ? { ...a, acknowledged: true, acknowledgedBy: CURRENT_USER, acknowledgedDate: new Date().toISOString() } : a)
-           };
-           onSaveTracking(updated);
-        }} />}
-        {activeTab === 'timeline' && <TripTimeline activeTrip={activeTrip} />}
+        {activeTab === 'live' && (
+          <LiveGPSDashboard
+            tracking={tracking}
+            routeGroups={routeGroups}
+            selectedRouteKey={selectedRouteKey}
+            selectedTripId={selectedMrRef}
+            onSelectRoute={(routeKey) => {
+              setSelectedRouteKey(routeKey);
+              const routeGroup = routeGroups.find(group => group.key === routeKey);
+              if (routeGroup?.trips?.[0]) {
+                setSelectedMrRef(routeGroup.trips[0].mrRef);
+              }
+            }}
+            onSelectTrip={(tripId) => {
+              setSelectedMrRef(tripId);
+              const trip = tracking.find(t => t.mrRef === tripId);
+              if (trip) {
+                setSelectedRouteKey(getRouteKey(trip));
+              }
+            }}
+          />
+        )}
+        {activeTab === 'planning' && (
+          <RoutePlanningScreen
+            routeGroup={currentRouteGroup}
+            selectedTrip={currentRouteGroup.trips[0] || activeTrip}
+          />
+        )}
+        {activeTab === 'geofence' && (
+          <GeofenceDashboard
+            tracking={tracking}
+            routeGroups={routeGroups}
+            selectedRouteKey={selectedRouteKey}
+          />
+        )}
+        {activeTab === 'alerts' && (
+          <AlertsDashboard
+            tracking={tracking}
+            routeGroups={routeGroups}
+            selectedRouteKey={selectedRouteKey}
+            onAcknowledge={(alertId, tripId) => {
+              const trip = tracking.find(t => t.mrRef === tripId);
+              if (!trip) return;
+              const updated = {
+                ...trip,
+                alerts: trip.alerts.map(a => a.id === alertId ? { ...a, acknowledged: true, acknowledgedBy: CURRENT_USER, acknowledgedDate: new Date().toISOString() } : a)
+              };
+              onSaveTracking(updated);
+            }}
+          />
+        )}
+        {activeTab === 'timeline' && <TripTimeline routeGroups={routeGroups} selectedRouteKey={selectedRouteKey} />}
       </div>
     </div>
   );
