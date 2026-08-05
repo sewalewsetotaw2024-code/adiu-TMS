@@ -316,6 +316,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     model: 'Toyota Dyna 2012',
     lastQehsCheck: '2026-02-12',
     status: 'Non-compliant',
+    approvalStatus: 'Pending Approval',
     driverName: 'Mustefa Hassen',
     driverId: 'DL-1102941',
     driverPhone: '+251915667788',
@@ -623,6 +624,22 @@ export const INITIAL_PAS: ProfitabilityAnalysis[] = [
     specialInstructions: 'Blue Nile crossing security escort mandatory. GPS location should be reported every 4 hours.',
     comment: 'Quote is 4% negative variance which requires TL & TIM validation. Approved due to security escort coordination capability.',
     approvalStatus: 'Approved'
+  },
+  {
+    paNumber: 'PA-2026-0212',
+    mrRef: 'MR-2026-0412',
+    supplierId: 'sup-02',
+    date: '2026-06-24',
+    quoteComparison: [
+      { supplierId: 'sup-02', supplierName: 'Lucy Freight & Transit Plc', truckType: '5-ton', routeZone: 'CNR', quotedPrice: 9600, budget: 9000, variance: 600, variancePercent: 6.7, status: 'Pending' },
+      { supplierId: 'sup-01', supplierName: 'Abyssinia Logistics Plc', truckType: '5-ton', routeZone: 'CNR', quotedPrice: 9200, budget: 9000, variance: 200, variancePercent: 2.2, status: 'Pending' }
+    ],
+    selectedSupplierId: 'sup-02',
+    workOrderNumber: 'WO-2026-8803',
+    issuedDate: '2026-06-24',
+    specialInstructions: 'Confirm night-labour loading to match contract terms, then route to Aeretta site.',
+    comment: 'Supplier quote exceeds budget and requires approval based on procurement policy thresholds.',
+    approvalStatus: 'Pending'
   }
 ];
 
@@ -646,7 +663,17 @@ export const INITIAL_DELIVERIES: DeliveryJob[] = [
     lastMileApprovalStatus: 'Approved',
     lastMileMethod: 'Labour',
     lastMileCost: 2500,
-    lastMilePhotoUrl: 'https://images.unsplash.com/photo-1521791136368-1a46827d0adb?auto=format&fit=crop&q=80&w=400'
+    lastMilePhotoUrl: 'https://images.unsplash.com/photo-1521791136368-1a46827d0adb?auto=format&fit=crop&q=80&w=400',
+    lastMileDeliveryRequested: true,
+    lastMileSiteId: 'ET-ADD-1024',
+    lastMileTransportAmount: 3200,
+    lastMileRequestStatus: 'Requested',
+    lastMileApprovalDocumentUrl: 'https://example.com/last-mile-doc.pdf',
+    paymentRequested: true,
+    paymentAmount: 15500,
+    paymentRequestStatus: 'Requested',
+    paymentRequestNotes: 'Fuel surcharge and night labour support for Bahir Dar route.',
+    paymentProofDocumentUrl: 'https://example.com/payment-request.pdf'
   },
   {
     mrRef: 'MR-2026-0413',
@@ -781,7 +808,7 @@ export const INITIAL_WCC_CLOSURES: WccClosure[] = [
     supplierInvoiceAmount: 8500,
     poVariance: 0,
     poVariancePercent: 0,
-    wccStatus: 'Not applied'
+    wccStatus: 'Applied'
   }
 ];
 
@@ -1181,5 +1208,13 @@ export const INITIAL_LOADING_CONFIRMATIONS: LoadingConfirmationData[] = [
     confirmationTime: '2026-06-25T14:30:00Z',
     status: 'Confirmed',
     notes: 'All items scanned and verified.'
+  },
+  {
+    tripId: 'TRP-002',
+    operatorName: 'Kassahun Bekele',
+    operatorId: 'OP-1003',
+    confirmationTime: '2026-06-26T11:15:00Z',
+    status: 'Pending Approval',
+    notes: 'Quantity mismatch flagged on a 10-ton shipment. Awaiting senior inspector approval.'
   }
 ];

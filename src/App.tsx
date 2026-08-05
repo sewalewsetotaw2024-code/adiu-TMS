@@ -23,6 +23,7 @@ import WccScreen from './components/WccScreen';
 import IncidentScreen from './components/IncidentScreen';
 import SettingsScreen from './components/SettingsScreen';
 import TrackingScreen from './components/TrackingScreen';
+import ApprovalsScreen from './components/ApprovalsScreen';
 
 // Types & Initial Data
 import { 
@@ -95,6 +96,7 @@ export default function App() {
   const [tracking, setTracking] = useState<TripTracking[]>(INITIAL_TRACKING);
   const [itemTracking, setItemTracking] = useState<TransportRequestItem[]>(INITIAL_ITEM_TRACKING);
   const [loadingConfirmations, setLoadingConfirmations] = useState<LoadingConfirmationData[]>(INITIAL_LOADING_CONFIRMATIONS);
+  const [approvalsRefreshToken, setApprovalsRefreshToken] = useState<number>(0);
 
   // Cross-screen contextual references
   const [selectedMrRef, setSelectedMrRef] = useState<string | null>(null);
@@ -568,6 +570,7 @@ export default function App() {
       case 'tracking': return ['GPS Tracking & Route Execution', 'Live Position, Geofences & Alerts'];
       case 'incidents': return ['Incident Management', 'Investigation & Accountability'];
       case 'wcc': return ['WCC Closure', 'Document Audit & PO Reconciliation'];
+      case 'approvals': return ['Approvals', 'Review and manage cross-module approval requests'];
       case 'settings': return ['Configuration', 'Database Parameters'];
       default: return ['Adiu TMS', 'Transport Management System'];
     }
@@ -743,6 +746,22 @@ export default function App() {
             wccClosures={wccClosures}
             mrs={mrs}
             onSaveWcc={handleSaveWcc}
+          />
+        );
+      case 'approvals':
+        return (
+          <ApprovalsScreen
+            pas={pas}
+            itemTracking={itemTracking}
+            loadingConfirmations={loadingConfirmations}
+            wccClosures={wccClosures}
+            vehicles={vehicles}
+            onSavePa={handleSavePa}
+            onSaveItemTracking={handleSaveItemTracking}
+            onSaveLoadingConfirmation={handleSaveLoadingConfirmation}
+            onSaveWcc={handleSaveWcc}
+            onSaveVehicle={handleSaveVehicle}
+            setScreen={setCurrentScreen}
           />
         );
       case 'settings':

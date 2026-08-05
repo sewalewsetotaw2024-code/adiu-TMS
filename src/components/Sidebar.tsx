@@ -131,6 +131,12 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
       group: 'Reporting'
     },
     {
+      id: 'approvals',
+      label: 'Approvals',
+      icon: ShieldCheck,
+      group: 'System Management'
+    },
+    {
       id: 'settings',
       label: 'Configuration',
       icon: Settings,
