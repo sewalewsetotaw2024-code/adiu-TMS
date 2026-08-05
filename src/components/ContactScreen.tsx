@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Contact } from '../types';
 import { ETHIOPIAN_REGIONS } from '../data';
-import { Search, Eye, Edit2, Plus, Star, ArrowLeft, ToggleLeft, ToggleRight, Check, Sparkles } from 'lucide-react';
+import { Search, Eye, Edit2, Plus, Star, ArrowLeft, ToggleLeft, ToggleRight, Check, Sparkles, Trash2 } from 'lucide-react';
 
 interface ContactScreenProps {
   contacts: Contact[];
   onSaveContact: (contact: Contact) => void;
+  onRemoveContact?: (contactId: string) => void;
 }
 
-export default function ContactScreen({ contacts, onSaveContact }: ContactScreenProps) {
+export default function ContactScreen({ contacts, onSaveContact, onRemoveContact }: ContactScreenProps) {
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [activeContact, setActiveContact] = useState<Contact | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -209,7 +210,7 @@ export default function ContactScreen({ contacts, onSaveContact }: ContactScreen
                   <th className="p-3">License No.</th>
                   <th className="p-3">Rating %</th>
                   <th className="p-3">Status</th>
-                  <th className="p-3 text-center">Action</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D3D1C7]/40 text-xs font-sans text-[#2C2C2A]">
@@ -245,13 +246,12 @@ export default function ContactScreen({ contacts, onSaveContact }: ContactScreen
                           {contact.status}
                         </span>
                       </td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => handleViewContact(contact)}
-                          className="px-2.5 py-1 text-[10px] font-medium border border-[#D3D1C7] rounded hover:bg-[#F1EFE8] transition-colors inline-flex items-center gap-1"
-                        >
-                          <Eye className="w-3 h-3 text-[#5F5E5A]" /> View / Edit
-                        </button>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <button onClick={(e) => { e.stopPropagation(); handleViewContact(contact); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleViewContact(contact); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); if (onRemoveContact) onRemoveContact(contact.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                        </div>
                       </td>
                     </tr>
                   ))

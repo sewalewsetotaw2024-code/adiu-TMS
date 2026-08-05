@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Driver, Vehicle } from '../types';
-import { Plus, Search, ArrowLeft, Upload, Check, User, Phone, Calendar, Award, Trash2, Car, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Upload, Check, User, Phone, Calendar, Award, Trash2, Car, ShieldAlert, ShieldCheck, Eye, Edit2 } from 'lucide-react';
 
 interface DriverScreenProps {
   drivers: Driver[];
@@ -247,13 +247,12 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
                             {d.status}
                           </span>
                         </td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => handleViewDriver(d)}
-                            className="px-2.5 py-1 text-[10px] border border-[#D3D1C7] rounded hover:bg-[#F1EFE8] transition-colors cursor-pointer"
-                          >
-                            Edit / Details
-                          </button>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-3">
+                            <button onClick={(e) => { e.stopPropagation(); handleViewDriver(d); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleViewDriver(d); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                            <button onClick={(e) => { e.stopPropagation(); if (onRemoveDriver) onRemoveDriver(d.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                          </div>
                         </td>
                       </tr>
                     );

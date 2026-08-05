@@ -1,23 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Incident, IncidentLogEntry, MR, Vehicle, Driver, Supplier, ProjectSite } from '../types';
-import {
-  ShieldAlert,
-  Plus,
-  X,
-  Clock,
-  User,
-  ArrowUpCircle,
-  CheckCircle2,
-  AlertTriangle,
-  Lock,
-  MessageSquarePlus,
-  Link2,
-  FolderCheck
-} from 'lucide-react';
+import { Plus, Filter, Search, FileText, CheckCircle2, AlertTriangle, ArrowRight, X, Image as ImageIcon, MessageSquarePlus, Download, Lock, MapPin, Calendar, Clock, User, ArrowUpCircle, ShieldAlert, Edit2, Eye, Trash2, Link2, FolderCheck } from 'lucide-react';
 
 interface IncidentScreenProps {
   incidents: Incident[];
   onSaveIncident: (incident: Incident) => void;
+  onRemoveIncident?: (id: string) => void;
   mrs: MR[];
   vehicles: Vehicle[];
   drivers: Driver[];
@@ -28,7 +16,7 @@ interface IncidentScreenProps {
 
 const CURRENT_USER = 'Solomon Tekle';
 
-const TYPES: Incident['type'][] = ['Theft', 'Loss', 'Missing','Damage', 'Delay', 'Route Deviation', 'Compliance Breach', 'Documentation Discrepancy'];
+const TYPES: Incident['type'][] = ['Theft', 'Loss', 'Damage', 'Delay', 'Route Deviation', 'Compliance Breach', 'Documentation Discrepancy'];
 const SEVERITIES: Incident['severity'][] = ['Low', 'Medium', 'High', 'Critical'];
 const ASSIGNED_ROLES: Incident['assignedRole'][] = ['Security', 'Transport', 'QEHS', 'Supplier Focal', 'Other'];
 
@@ -82,16 +70,7 @@ function statusColor(status: Incident['status']) {
   }
 }
 
-export default function IncidentScreen({
-  incidents,
-  onSaveIncident,
-  mrs,
-  vehicles,
-  drivers,
-  suppliers,
-  sites,
-  prefillMrRef
-}: IncidentScreenProps) {
+export default function IncidentScreen({ incidents, onSaveIncident, onRemoveIncident, mrs, vehicles, drivers, suppliers, sites, prefillMrRef }: IncidentScreenProps) {
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [filterSeverity, setFilterSeverity] = useState<string>('All');
   const [filterType, setFilterType] = useState<string>('All');
@@ -237,115 +216,50 @@ export default function IncidentScreen({
   const linkedDriver = draft ? drivers.find(d => d.id === draft.driverId) : null;
   const linkedSite = draft ? sites.find(s => s.siteId === draft.siteId) : null;
 
-  return (
-    <div className="space-y-6 select-none pb-10" id="incident-screen-container">
-      {/* Header / KPI strip */}
-      <div className="flex flex-wrap items-center justify-between bg-white p-4 rounded-xl border border-[#D3D1C7] gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-[#2C2C2A]">Incident Management &amp; Investigation</h2>
-            <p className="text-[11px] text-[#5F5E5A]">Theft, loss, damage, delay, route deviation, and compliance case tracking</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans bg-[#F1EFE8]/30">
-            <option value="All">All Types</option>
-            {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <select value={filterSeverity} onChange={(e) => setFilterSeverity(e.target.value)} className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans bg-[#F1EFE8]/30">
-            <option value="All">All Severities</option>
-            {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans bg-[#F1EFE8]/30">
-            <option value="All">All Statuses</option>
-            <option value="Open">Open</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Pending Evidence">Pending Evidence</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Closed">Closed</option>
-          </select>
-          <button
-            onClick={startNewCase}
-            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> New Incident
-          </button>
-        </div>
-      </div>
+  const kpis = useMemo(() => {
+    let total = incidents.length;
+    let openProgress = 0;
+    let pendingEvidence = 0;
+    let resolvedClosed = 0;
+    
+    incidents.forEach(inc => {
+      if (['Open', 'In Progress'].includes(inc.status)) openProgress++;
+      if (inc.status === 'Pending Evidence') pendingEvidence++;
+      if (['Resolved', 'Closed'].includes(inc.status)) resolvedClosed++;
+    });
 
-      {/* Case list */}
-      <div className="overflow-x-auto border border-[#D3D1C7]/60 rounded-lg bg-white">
-        <table className="w-full text-left border-collapse" id="incident-table">
-          <thead>
-            <tr className="bg-[#F1EFE8]/45 border-b border-[#D3D1C7]/80 text-[10px] font-sans font-semibold text-[#5F5E5A] uppercase tracking-wider">
-              <th className="p-3">Case #</th>
-              <th className="p-3">Type</th>
-              <th className="p-3">Severity</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Linked Job / Vehicle</th>
-              <th className="p-3">Assigned To</th>
-              <th className="p-3">Reported</th>
-              <th className="p-3">Due</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#D3D1C7]/40 text-xs font-sans text-[#2C2C2A]">
-            {filteredIncidents.length === 0 && (
-              <tr>
-                <td colSpan={8} className="p-8 text-center text-[#5F5E5A]">No incidents match the selected filters.</td>
-              </tr>
-            )}
-            {filteredIncidents.map(incident => (
-              <tr
-                key={incident.id}
-                onClick={() => openCase(incident)}
-                className={`cursor-pointer hover:bg-[#F1EFE8]/20 transition-all ${selectedCaseId === incident.id ? 'bg-emerald-50/40' : ''}`}
-              >
-                <td className="p-3 font-mono font-bold text-[#2C2C2A]">{incident.id}</td>
-                <td className="p-3 text-slate-600">{incident.type}</td>
-                <td className="p-3">
-                  <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${severityColor(incident.severity)}`}>{incident.severity}</span>
-                </td>
-                <td className="p-3">
-                  <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${statusColor(incident.status)}`}>{incident.status}</span>
-                </td>
-                <td className="p-3 text-slate-600">
-                  {incident.mrRef || '—'}{incident.vehiclePlate ? ` / ${incident.vehiclePlate}` : ''}
-                </td>
-                <td className="p-3 text-slate-600">{incident.assignedTo || '—'}</td>
-                <td className="p-3 font-mono text-slate-500">{incident.reportedDate}</td>
-                <td className={`p-3 font-mono ${isOverdue(incident) ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
-                  {incident.dueDate || '—'}
-                  {isOverdue(incident) && <AlertTriangle className="w-3 h-3 inline ml-1 -mt-0.5" />}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    return { total, openProgress, pendingEvidence, resolvedClosed };
+  }, [incidents]);
 
-      {/* Case detail panel */}
-      {draft && (
-        <div className="space-y-6 bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#D3D1C7] pb-3">
-            <div className="flex items-center gap-3">
-              <span className="font-mono font-bold text-sm text-[#2C2C2A]">{draft.id}</span>
-              <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${severityColor(draft.severity)}`}>{draft.severity}</span>
-              <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${statusColor(draft.status)}`}>{draft.status}</span>
-              {draft.escalated && (
-                <span className="px-2 py-0.5 rounded border text-[10px] font-bold bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1">
-                  <ArrowUpCircle className="w-3 h-3" /> Escalated to {draft.escalatedTo}
-                </span>
-              )}
-            </div>
-            <button onClick={closePanel} className="text-[#5F5E5A] hover:text-[#2C2C2A]">
-              <X className="w-4 h-4" />
+  if (draft) {
+    return (
+      <div className="space-y-6 select-none pb-10 max-w-[1600px] mx-auto" id="incident-detail-container">
+        <div className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl border border-[#D3D1C7] shadow-sm gap-4">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <button 
+              onClick={closePanel}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors"
+            >
+              &larr; Back to List
             </button>
+            <div className="h-8 w-px bg-gray-300 mx-2 hidden md:block"></div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="font-mono font-bold text-lg text-[#2C2C2A]">{draft.id}</span>
+                <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${severityColor(draft.severity)}`}>{draft.severity}</span>
+                <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${statusColor(draft.status)}`}>{draft.status}</span>
+                {draft.escalated && (
+                  <span className="px-2 py-0.5 rounded border text-[10px] font-bold bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1">
+                    <ArrowUpCircle className="w-3 h-3" /> Escalated to {draft.escalatedTo}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
+        </div>
 
+        <div className="bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: case fields */}
             <div className="lg:col-span-2 space-y-4">
@@ -580,7 +494,124 @@ export default function IncidentScreen({
             </div>
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 select-none pb-10 max-w-[1600px] mx-auto" id="incident-screen-container">
+      <div className="space-y-5 bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-[#2C2C2A]">Incident Management</h2>
+            <p className="text-sm text-[#5F5E5A]">Track and investigate thefts, losses, damages, and compliance cases.</p>
+          </div>
+          <button
+            onClick={startNewCase}
+            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
+          >
+            <Plus className="w-4 h-4" /> New Incident
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total Incidents</p>
+            <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{kpis.total}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Open / In Progress</p>
+            <p className="mt-2 text-2xl font-bold text-red-600">{kpis.openProgress}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Pending Evidence</p>
+            <p className="mt-2 text-2xl font-bold text-orange-500">{kpis.pendingEvidence}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Resolved / Closed</p>
+            <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{kpis.resolvedClosed}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 py-2">
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans bg-white shadow-sm focus:outline-none focus:border-[#1D9E75]">
+            <option value="All">All Types</option>
+            {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select value={filterSeverity} onChange={(e) => setFilterSeverity(e.target.value)} className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans bg-white shadow-sm focus:outline-none focus:border-[#1D9E75]">
+            <option value="All">All Severities</option>
+            {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans bg-white shadow-sm focus:outline-none focus:border-[#1D9E75]">
+            <option value="All">All Statuses</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Pending Evidence">Pending Evidence</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Closed">Closed</option>
+          </select>
+        </div>
+
+      {/* Case list */}
+      <div className="bg-white rounded-xl border border-[#D3D1C7] shadow-sm overflow-hidden">
+        <table className="w-full text-left border-collapse" id="incident-table">
+          <thead>
+            <tr className="bg-[#F1EFE8]/45 border-b border-[#D3D1C7]/80 text-[10px] font-sans font-semibold text-[#5F5E5A] uppercase tracking-wider">
+              <th className="p-3">Case #</th>
+              <th className="p-3">Type</th>
+              <th className="p-3">Severity</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Linked Job / Vehicle</th>
+              <th className="p-3">Assigned To</th>
+              <th className="p-3">Reported</th>
+              <th className="p-3">Due</th>
+              <th className="p-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#D3D1C7]/40 text-xs font-sans text-[#2C2C2A]">
+            {filteredIncidents.length === 0 && (
+              <tr>
+                <td colSpan={9} className="p-8 text-center text-[#5F5E5A]">No incidents match the selected filters.</td>
+              </tr>
+            )}
+            {filteredIncidents.map(incident => (
+              <tr
+                key={incident.id}
+                onClick={() => openCase(incident)}
+                className={`cursor-pointer hover:bg-[#F1EFE8]/20 transition-all ${selectedCaseId === incident.id ? 'bg-emerald-50/40' : ''}`}
+              >
+                <td className="p-3 font-mono font-bold text-[#2C2C2A]">{incident.id}</td>
+                <td className="p-3 text-slate-600">{incident.type}</td>
+                <td className="p-3">
+                  <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${severityColor(incident.severity)}`}>{incident.severity}</span>
+                </td>
+                <td className="p-3">
+                  <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${statusColor(incident.status)}`}>{incident.status}</span>
+                </td>
+                <td className="p-3 text-slate-600">
+                  {incident.mrRef || '—'}{incident.vehiclePlate ? ` / ${incident.vehiclePlate}` : ''}
+                </td>
+                <td className="p-3 text-slate-600">{incident.assignedTo || '—'}</td>
+                <td className="p-3 font-mono text-slate-500">{incident.reportedDate}</td>
+                <td className={`p-3 font-mono ${isOverdue(incident) ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
+                  {incident.dueDate || '—'}
+                  {isOverdue(incident) && <AlertTriangle className="w-3 h-3 inline ml-1 -mt-0.5" />}
+                </td>
+                <td className="p-3 text-right">
+                  <div className="flex items-center justify-end gap-3">
+                    <button onClick={(e) => { e.stopPropagation(); openCase(incident); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                    <button onClick={(e) => { e.stopPropagation(); openCase(incident); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                    <button onClick={(e) => { e.stopPropagation(); if (onRemoveIncident) onRemoveIncident(incident.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+
+      </div>
     </div>
   );
 }

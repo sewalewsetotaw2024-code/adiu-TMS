@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Vehicle, Supplier, Driver } from '../types';
-import { Plus, Search, ArrowLeft, Upload, Check, ShieldCheck, ShieldAlert, Ban, Info, Image, Calendar, Trash2, User } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Upload, Check, ShieldCheck, ShieldAlert, Ban, Info, Image, Calendar, Trash2, User, Eye, Edit2 } from 'lucide-react';
 
 interface VehicleScreenProps {
   vehicles: Vehicle[];
   suppliers: Supplier[];
   drivers: Driver[];
   onSaveVehicle: (vehicle: Vehicle) => void;
+  onRemoveVehicle?: (plateNumber: string) => void;
 }
 
-export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehicle }: VehicleScreenProps) {
+export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehicle, onRemoveVehicle }: VehicleScreenProps) {
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [activeVehicle, setActiveVehicle] = useState<Vehicle | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -208,7 +209,7 @@ export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehi
                   <th className="p-3">Driver Name</th>
                   <th className="p-3">Last QEHS Check</th>
                   <th className="p-3">Status</th>
-                  <th className="p-3 text-center">Action</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D3D1C7]/40 text-xs font-sans text-[#2C2C2A]">
@@ -239,13 +240,12 @@ export default function VehicleScreen({ vehicles, suppliers, drivers, onSaveVehi
                             {v.status}
                           </span>
                         </td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => handleViewVehicle(v)}
-                            className="px-2.5 py-1 text-[10px] border border-[#D3D1C7] rounded hover:bg-[#F1EFE8] transition-colors"
-                          >
-                            Audit / Details
-                          </button>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-3">
+                            <button onClick={(e) => { e.stopPropagation(); handleViewVehicle(v); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleViewVehicle(v); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                            <button onClick={(e) => { e.stopPropagation(); if (onRemoveVehicle) onRemoveVehicle(v.plateNumber); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                          </div>
                         </td>
                       </tr>
                     );

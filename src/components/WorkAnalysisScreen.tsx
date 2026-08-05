@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkAnalysis, WorkAnalysisSite, MR, StoreCluster, ProjectSite } from '../types';
 import { TL_STAFF, TIM_STAFF, TRUCK_TYPES } from '../data';
-import { Save, Check, ShieldAlert, FileText, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Save, Check, ShieldAlert, FileText, Plus, Trash2, ArrowRight, Eye, Edit2 } from 'lucide-react';
 
 interface WorkAnalysisScreenProps {
   workAnalyses: WorkAnalysis[];
@@ -9,6 +9,7 @@ interface WorkAnalysisScreenProps {
   sites: ProjectSite[];
   clusters: StoreCluster[];
   onSaveWorkAnalysis: (wa: WorkAnalysis) => void;
+  onRemoveWorkAnalysis?: (waId: string) => void;
   selectedMrRef: string | null;
 }
 
@@ -373,12 +374,11 @@ export default function WorkAnalysisScreen({
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => handleViewDetail(wa.id)}
-                        className="text-[#1D9E75] hover:text-[#168561] text-sm font-semibold"
-                      >
-                        View
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button onClick={(e) => { e.stopPropagation(); handleViewDetail(wa.id); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleViewDetail(wa.id); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                        <button onClick={(e) => { e.stopPropagation(); if (onRemoveWorkAnalysis) onRemoveWorkAnalysis(wa.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))

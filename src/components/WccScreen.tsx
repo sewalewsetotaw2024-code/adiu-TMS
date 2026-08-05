@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { WccClosure, MR } from '../types';
+import { Plus, X, Edit2, Eye, Trash2 } from 'lucide-react';
 import { 
   FileCheck, 
   Upload, 
@@ -17,22 +18,72 @@ interface WccScreenProps {
   wccClosures: WccClosure[];
   mrs: MR[];
   onSaveWcc: (closure: WccClosure) => void;
+  onRemoveWcc?: (mrRef: string) => void;
 }
 
-export default function WccScreen({ wccClosures, mrs, onSaveWcc }: WccScreenProps) {
-  const [selectedMrRef, setSelectedMrRef] = useState(wccClosures[0]?.mrRef || '');
+export default function WccScreen({ wccClosures, mrs, onSaveWcc, onRemoveWcc }: WccScreenProps) {
+  const [selectedMrRef, setSelectedMrRef] = useState<string | null>(null);
   const [activeWcc, setActiveWcc] = useState<WccClosure | null>(null);
 
   // Sync state when selected MR changes
   useEffect(() => {
-    const record = wccClosures.find(w => w.mrRef === selectedMrRef);
-    if (record) {
-      setActiveWcc(JSON.parse(JSON.stringify(record)));
-    } else if (wccClosures.length > 0) {
-      setActiveWcc(JSON.parse(JSON.stringify(wccClosures[0])));
-      setSelectedMrRef(wccClosures[0].mrRef);
+    if (selectedMrRef) {
+      const record = wccClosures.find(w => w.mrRef === selectedMrRef);
+      if (record) {
+        setActiveWcc(JSON.parse(JSON.stringify(record)));
+      } else {
+        // Init a new blank one if not found
+        setActiveWcc({
+          mrRef: selectedMrRef,
+          poNumber: '',
+          poAmount: 0,
+          supplierInvoiceAmount: 0,
+          poVariance: 0,
+          poVariancePercent: 0,
+          wccStatus: 'Draft',
+          basecampStatus: 'Active',
+          docMrSigned: false,
+          docDeliveryPhoto: false,
+          docWorkOrderCopy: false,
+          docGrn: false,
+          docSupplierInvoice: false
+        });
+      }
+    } else {
+      setActiveWcc(null);
     }
   }, [selectedMrRef, wccClosures]);
+
+  const kpis = useMemo(() => {
+    let total = wccClosures.length;
+    let drafts = 0;
+    let pendingApproval = 0;
+    let approved = 0;
+    
+    wccClosures.forEach(w => {
+      if (w.wccStatus === 'Not applied') drafts++;
+      if (w.wccStatus === 'Applied') pendingApproval++;
+      if (w.wccStatus === 'Approved') approved++;
+    });
+
+    return { total, drafts, pendingApproval, approved };
+  }, [wccClosures]);
+
+  const startNewWcc = () => {
+    // Find first MR that doesn't have a WCC yet
+    const usedMrs = wccClosures.map(w => w.mrRef);
+    const availableMr = mrs.find(m => !usedMrs.includes(m.mrNumber));
+    if (availableMr) {
+      setSelectedMrRef(availableMr.mrNumber);
+    } else {
+      alert("All MRs already have a WCC.");
+    }
+  };
+
+  const closePanel = () => {
+    setSelectedMrRef(null);
+  };
+
 
   const handleFieldChange = (field: keyof WccClosure, value: any) => {
     if (!activeWcc) return;
@@ -109,48 +160,40 @@ export default function WccScreen({ wccClosures, mrs, onSaveWcc }: WccScreenProp
     alert(`WCC approved successfully. Closed out finance registers for MR ${activeWcc.mrRef}.`);
   };
 
-  if (!activeWcc) return null;
 
-  // Determine doc checklist completeness status
-  const isDocComplete = activeWcc.docMrSigned && 
-                        activeWcc.docDeliveryPhoto && 
-                        activeWcc.docWorkOrderCopy && 
-                        activeWcc.docGrn && 
-                        activeWcc.docSupplierInvoice;
 
-  return (
-    <div className="space-y-6 select-none pb-20" id="wcc-closure-container">
-      
-      {/* Selector row */}
-      <div className="flex flex-wrap items-center justify-between bg-white p-4 rounded-xl border border-[#D3D1C7] gap-3">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-[#5F5E5A]">Select Closure Request:</span>
-          <select 
-            id="wcc-selector"
-            value={selectedMrRef} 
-            onChange={(e) => setSelectedMrRef(e.target.value)}
-            className="h-9 px-3 rounded-lg border border-[#D3D1C7] text-xs font-sans text-[#2C2C2A] bg-[#F1EFE8]/30 focus:outline-none focus:border-[#1D9E75]"
+  if (activeWcc) {
+    // Determine doc checklist completeness status
+    const isDocComplete = activeWcc.docMrSigned && 
+                          activeWcc.docDeliveryPhoto && 
+                          activeWcc.docWorkOrderCopy && 
+                          activeWcc.docGrn && 
+                          activeWcc.docSupplierInvoice;
+
+    return (
+      <div className="space-y-6 select-none pb-20 max-w-[1600px] mx-auto" id="wcc-closure-detail-container">
+
+      <div className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl border border-[#D3D1C7] shadow-sm gap-4">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <button 
+            onClick={closePanel}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors"
           >
-            {wccClosures.map(w => (
-              <option key={w.mrRef} value={w.mrRef}>{w.mrRef} (PO: {w.poNumber})</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[#5F5E5A]">WCC Application Status:</span>
-          <span className={`px-3 py-1 rounded-full font-bold text-xs uppercase tracking-tight border ${
-            activeWcc.wccStatus === 'Approved' 
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-              : activeWcc.wccStatus === 'Applied'
-              ? 'bg-sky-50 text-sky-700 border-sky-200'
-              : 'bg-amber-50 text-amber-700 border-amber-200'
-          }`}>
-            {activeWcc.wccStatus}
-          </span>
+            &larr; Back to List
+          </button>
+          <div className="h-8 w-px bg-gray-300 mx-2 hidden md:block"></div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <span className="font-mono font-bold text-lg text-[#2C2C2A]">{activeWcc.mrRef}</span>
+              <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${
+                activeWcc.wccStatus === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                activeWcc.wccStatus === 'Applied' ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}>{activeWcc.wccStatus}</span>
+            </div>
+            <p className="text-xs text-gray-500">WCC Application & PO Reconciliation</p>
+          </div>
         </div>
       </div>
-
       {/* Two column layout: Documents checklist + Finance reconciles */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
@@ -370,6 +413,105 @@ export default function WccScreen({ wccClosures, mrs, onSaveWcc }: WccScreenProp
         </div>
       </div>
 
+
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 select-none pb-10 max-w-[1600px] mx-auto" id="wcc-closure-container">
+      <div className="space-y-5 bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-[#2C2C2A]">Work Completion & Closure (WCC)</h2>
+            <p className="text-sm text-[#5F5E5A]">Manage job closeouts, document checks, and finance reconciliations.</p>
+          </div>
+          <button
+            onClick={startNewWcc}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#168561] text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Create New WCC Draft
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total Applications</p>
+            <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{kpis.total}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Drafts / Incomplete</p>
+            <p className="mt-2 text-2xl font-bold text-gray-600">{kpis.drafts}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Pending Approval</p>
+            <p className="mt-2 text-2xl font-bold text-sky-600">{kpis.pendingApproval}</p>
+          </div>
+          <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Approved / Closed</p>
+            <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{kpis.approved}</p>
+          </div>
+        </div>
+
+        {/* List View */}
+        <div className="bg-white rounded-xl border border-[#D3D1C7] shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-[#D3D1C7] text-xs font-sans font-bold text-[#5F5E5A] uppercase tracking-wider">
+                <th className="px-6 py-4">MR Reference</th>
+                <th className="px-6 py-4">PO Number</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Checklist</th>
+                <th className="px-6 py-4">Variance</th>
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#D3D1C7]/40 text-sm font-sans text-[#2C2C2A]">
+              {wccClosures.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center text-[#5F5E5A]">
+                    <Briefcase className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="font-medium text-gray-700">No WCC records found</p>
+                  </td>
+                </tr>
+              ) : (
+                wccClosures.map(wcc => (
+                  <tr key={wcc.mrRef} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedMrRef(wcc.mrRef)}>
+                    <td className="px-6 py-4 font-mono font-bold text-[#1D9E75]">{wcc.mrRef}</td>
+                    <td className="px-6 py-4 font-mono text-gray-600">{wcc.poNumber || '—'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        wcc.wccStatus === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
+                        wcc.wccStatus === 'Applied' ? 'bg-sky-100 text-sky-800' :
+                        'bg-amber-100 text-amber-900'
+                      }`}>
+                        {wcc.wccStatus}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      { [wcc.docMrSigned, wcc.docDeliveryPhoto, wcc.docWorkOrderCopy, wcc.docGrn, wcc.docSupplierInvoice].filter(Boolean).length } / 5
+                    </td>
+                    <td className="px-6 py-4">
+                      {wcc.poVariancePercent > 0 ? (
+                        <span className="text-red-600 font-bold">+{wcc.poVariancePercent}%</span>
+                      ) : (
+                        <span className="text-gray-500">None</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-3">
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedMrRef(wcc.mrRef); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedMrRef(wcc.mrRef); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                        <button onClick={(e) => { e.stopPropagation(); if (onRemoveWcc) onRemoveWcc(wcc.mrRef); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MR, MRLineItem, ProjectSite } from '../types';
 import { TIM_STAFF, TL_STAFF, TRUCK_TYPES, INITIAL_SITES, INITIAL_CATEGORIES } from '../data';
-import { Plus, Trash2, ArrowRight, Save, CheckCircle, FilePlus, FileText, CheckCircle2, Clock, Truck, MapPin, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, ArrowLeft, Save, CheckCircle, FilePlus, FileText, CheckCircle2, Clock, Truck, MapPin, FileSpreadsheet, Eye, Edit2 } from 'lucide-react';
 import RequisitionSpreadsheet from './RequisitionSpreadsheet';
 
 interface MrScreenProps {
   mrs: MR[];
   onSaveMr: (mr: MR) => void;
+  onRemoveMr?: (mrNumber: string) => void;
   selectedMrRef: string | null;
   setSelectedMrRef: (mrRef: string | null) => void;
 }
@@ -15,7 +16,7 @@ const STEPPER_STAGES = [
   'Received', 'Handed over', 'Analysed', 'Approved', 'Dispatched', 'Delivered', 'Closed'
 ];
 
-export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRef }: MrScreenProps) {
+export default function MrScreen({ mrs, onSaveMr, onRemoveMr, selectedMrRef, setSelectedMrRef }: MrScreenProps) {
   const [activeMr, setActiveMr] = useState<MR | null>(null);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'spreadsheet' | 'routing'>('spreadsheet');
@@ -265,9 +266,11 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-[#1D9E75] hover:text-[#168561] font-semibold text-sm">
-                        View
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedMrRef(m.mrNumber); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedMrRef(m.mrNumber); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                        <button onClick={(e) => { e.stopPropagation(); if (onRemoveMr) onRemoveMr(m.mrNumber); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -284,15 +287,19 @@ export default function MrScreen({ mrs, onSaveMr, selectedMrRef, setSelectedMrRe
     <div className="space-y-6 select-none pb-20 max-w-[1600px] mx-auto" id="mr-screen-container">
       
       {/* 2. MR Toolbar & Selector (now just a Back button & Context) */}
-      <div className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl border border-[#D3D1C7] shadow-sm gap-4">
-        <div className="flex items-center gap-4 w-full md:w-auto">
+      <div className="bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-[#D3D1C7] pb-3 mb-4">
           <button 
             onClick={() => setSelectedMrRef(null)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-semibold transition-colors"
+            className="flex items-center gap-1.5 text-xs text-[#5F5E5A] hover:text-[#2C2C2A] font-sans font-medium transition-colors"
           >
-            &larr; Back to List
+            <ArrowLeft className="w-4 h-4" /> Back to MR list
           </button>
-          <div className="h-8 w-px bg-gray-300 mx-2 hidden md:block"></div>
+          <span className="text-xs font-bold text-[#1D9E75] font-sans">
+            {activeMr.mrNumber ? `Viewing MR: ${activeMr.mrNumber}` : 'New Material Requisition'}
+          </span>
+        </div>
+        <div className="flex items-center gap-4 w-full md:w-auto">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h2 className="text-lg font-bold text-[#2C2C2A]">{activeMr.mrNumber}</h2>

@@ -44,21 +44,27 @@ interface RoleItem {
 }
 
 const RESOURCES_LIST = [
-  'Address',
-  'Allowance',
-  'Allowance Type',
-  'Bank',
-  'Career Event',
-  'Celebration',
-  'Certificate',
+  'Dashboard',
   'Material Requests (MRs)',
   'Work Analysis & Truck Recommendations',
-  'Price Book Entry',
-  'Profitability Analysis (PA)',
-  'Delivery Tracker Jobs',
+  'Scope of Work (SOW)',
+  'Projects & Geofences',
+  'Sites',
+  'Contacts (Suppliers & Vendors)',
   'Vehicles & Drivers Database',
+  'Price Book Entry',
+  'Supplier Quotations',
+  'Profitability Analysis (PA)',
+  'Approvals',
+  'Dispatch & Compliance',
+  'Loading Confirmation',
+  'Delivery Tracker Jobs',
+  'GPS Tracking',
+  'Proof of Delivery (POD)',
   'WCC Closures',
-  'Projects & Geofences'
+  'Incident Management',
+  'Reporting',
+  'Settings & User Roles'
 ];
 
 const seedPermissions = (roleName: string): RolePermission[] => {
@@ -72,22 +78,33 @@ const seedPermissions = (roleName: string): RolePermission[] => {
       create = true;
       update = true;
       del = true;
-    } else if (roleName === 'SDT Coordinator') {
-      if (['Material Requests (MRs)', 'Work Analysis & Truck Recommendations', 'Projects & Geofences', 'Address'].includes(resource)) {
+    } else if (roleName === 'Telecom Implementation Manager') {
+      if (['Material Requests (MRs)', 'Projects & Geofences', 'Sites'].includes(resource)) {
         create = true;
         update = true;
       }
-      if (['Vehicles & Drivers Database'].includes(resource)) {
+    } else if (roleName === 'Sourcing, Transport and PIM Manager') {
+      if (['Price Book Entry', 'Supplier Quotations', 'Profitability Analysis (PA)'].includes(resource)) {
         create = true;
         update = true;
       }
-    } else if (roleName === 'Procurement Officer') {
-      if (['Price Book Entry', 'Profitability Analysis (PA)', 'Allowance', 'Allowance Type'].includes(resource)) {
+    } else if (roleName === 'Transport Lead') {
+      if (['Work Analysis & Truck Recommendations', 'Approvals', 'WCC Closures'].includes(resource)) {
         create = true;
         update = true;
       }
-    } else if (roleName === 'Driver Supervisor') {
-      if (['Delivery Tracker Jobs'].includes(resource)) {
+    } else if (roleName === 'Supply Chain Director') {
+      if (['Approvals', 'Reporting'].includes(resource)) {
+        create = true;
+        update = true;
+      }
+    } else if (roleName === 'Quality, Environment, Health & Safety Manager') {
+      if (['Dispatch & Compliance', 'Incident Management'].includes(resource)) {
+        create = true;
+        update = true;
+      }
+    } else if (roleName === 'Sorting & Delivery Team') {
+      if (['Delivery Tracker Jobs', 'GPS Tracking', 'Proof of Delivery (POD)', 'Loading Confirmation'].includes(resource)) {
         update = true;
       }
     }
@@ -131,16 +148,16 @@ export default function SettingsScreen({
 
   // 1. Initial Users state
   const [users, setUsers] = useState<UserItem[]>([
-    { id: 'u-1', name: 'Solomon Tekle', email: 'solomon@adiu-tms.com', role: 'SDT Coordinator', region: 'Addis Ababa', status: 'Active' },
-    { id: 'u-2', name: 'Mustefa Kemal', email: 'mustefa@adiu-tms.com', role: 'Procurement Officer', region: 'Zonal/North', status: 'Active' },
+    { id: 'u-1', name: 'Solomon Tekle', email: 'solomon@adiu-tms.com', role: 'Telecom Implementation Manager', region: 'Addis Ababa', status: 'Active' },
+    { id: 'u-2', name: 'Mustefa Kemal', email: 'mustefa@adiu-tms.com', role: 'Sourcing, Transport and PIM Manager', region: 'Zonal/North', status: 'Active' },
     { id: 'u-3', name: 'Yonas Berhe', email: 'yonas@adiu-tms.com', role: 'Admin', region: 'All Regions', status: 'Active' },
-    { id: 'u-4', name: 'Ashenafi Hailu', email: 'ashenafi@adiu-tms.com', role: 'Driver Supervisor', region: 'Hawassa', status: 'Active' },
+    { id: 'u-4', name: 'Ashenafi Hailu', email: 'ashenafi@adiu-tms.com', role: 'Transport Lead', region: 'Hawassa', status: 'Active' },
   ]);
 
   const [newUser, setNewUser] = useState<Omit<UserItem, 'id'>>({
     name: '',
     email: '',
-    role: 'Procurement Officer',
+    role: 'Transport Lead',
     region: 'Addis Ababa',
     status: 'Active'
   });
@@ -158,39 +175,39 @@ export default function SettingsScreen({
     },
     {
       id: 'r-2',
-      name: 'SDT Coordinator',
-      description: 'Coordinates sites, geofences, and transport requests',
-      permissions: seedPermissions('SDT Coordinator')
+      name: 'Telecom Implementation Manager',
+      description: 'Creates projects, sites, and MRs',
+      permissions: seedPermissions('Telecom Implementation Manager')
     },
     {
       id: 'r-3',
-      name: 'Procurement Officer',
-      description: 'Conducts pricing, supplier allocations, and commercial analysis',
-      permissions: seedPermissions('Procurement Officer')
-    },
-    {
-      id: 'r-4',
-      name: 'Driver Supervisor',
-      description: 'Manages loading scans and coordinates on-ground logistics',
-      permissions: seedPermissions('Driver Supervisor')
-    },
-    {
-      id: 'r-5',
-      name: 'Transport Lead',
-      description: 'Reviews and signs off on negative quote variances ≤10%',
-      permissions: seedPermissions('Transport Lead')
-    },
-    {
-      id: 'r-6',
       name: 'Sourcing, Transport and PIM Manager',
-      description: 'Approves negative quote variances in the 10% to 20% range',
+      description: 'Handles supplier management and cost approvals',
       permissions: seedPermissions('Sourcing, Transport and PIM Manager')
     },
     {
-      id: 'r-7',
+      id: 'r-4',
+      name: 'Transport Lead',
+      description: 'Manages work analysis, WCC, and dispatch approvals',
+      permissions: seedPermissions('Transport Lead')
+    },
+    {
+      id: 'r-5',
       name: 'Supply Chain Director',
-      description: 'Maintains ultimate veto and approval rights for high-variance quote deviations >20%',
+      description: 'Ultimate approval authority for high variances',
       permissions: seedPermissions('Supply Chain Director')
+    },
+    {
+      id: 'r-6',
+      name: 'Quality, Environment, Health & Safety Manager',
+      description: 'Oversees safety compliance and incident management',
+      permissions: seedPermissions('Quality, Environment, Health & Safety Manager')
+    },
+    {
+      id: 'r-7',
+      name: 'Sorting & Delivery Team',
+      description: 'Executes transport and captures POD',
+      permissions: seedPermissions('Sorting & Delivery Team')
     }
   ]);
 

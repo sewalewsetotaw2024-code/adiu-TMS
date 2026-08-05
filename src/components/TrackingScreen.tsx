@@ -693,22 +693,6 @@ export default function TrackingScreen({ tracking, onSaveTracking }: TrackingScr
           <LiveGPSDashboard
             tracking={tracking}
             routeGroups={routeGroups}
-            selectedRouteKey={selectedRouteKey}
-            selectedTripId={selectedMrRef}
-            onSelectRoute={(routeKey) => {
-              setSelectedRouteKey(routeKey);
-              const routeGroup = routeGroups.find(group => group.key === routeKey);
-              if (routeGroup?.trips?.[0]) {
-                setSelectedMrRef(routeGroup.trips[0].mrRef);
-              }
-            }}
-            onSelectTrip={(tripId) => {
-              setSelectedMrRef(tripId);
-              const trip = tracking.find(t => t.mrRef === tripId);
-              if (trip) {
-                setSelectedRouteKey(getRouteKey(trip));
-              }
-            }}
           />
         )}
         {activeTab === 'planning' && (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ProjectSite, StoreCluster, Project } from '../types';
 import { ETHIOPIAN_REGIONS, TIM_STAFF } from '../data';
-import { Search, MapPin, Layers, Plus, Trash2, Edit2, Check, ArrowLeft } from 'lucide-react';
+import { Search, MapPin, Layers, Plus, Trash2, Edit2, Check, ArrowLeft, Eye } from 'lucide-react';
 
 interface SitesScreenProps {
   sites: ProjectSite[];
@@ -245,21 +245,12 @@ export default function SitesScreen({
                             {site.implementationPriority}
                           </span>
                         </td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => handleEditSite(site)}
-                            className="p-1 hover:bg-[#F1EFE8] rounded text-[#2C2C2A] transition-colors"
-                          >
-                            <Edit2 className="w-3.5 h-3.5 text-[#5F5E5A]" />
-                          </button>
-                          {onRemoveSite && (
-                            <button
-                              onClick={() => onRemoveSite(site.siteId)}
-                              className="p-1 hover:bg-red-50 text-red-600 rounded transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-3">
+                            <button onClick={(e) => { e.stopPropagation(); handleEditSite(site); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleEditSite(site); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                            <button onClick={(e) => { e.stopPropagation(); if (onRemoveSite) onRemoveSite(site.siteId); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -509,21 +500,10 @@ export default function SitesScreen({
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-[#D3D1C7]/40 flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEditCluster(cl)}
-                        className="px-3 py-1 border border-[#D3D1C7] hover:bg-[#F1EFE8] rounded-md text-xs font-sans font-medium text-[#2C2C2A]"
-                      >
-                        Edit Cluster
-                      </button>
-                      {onRemoveCluster && (
-                        <button
-                          onClick={() => onRemoveCluster(cl.id)}
-                          className="p-1 hover:bg-red-50 text-red-600 rounded transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                    <div className="pt-2 border-t border-[#D3D1C7]/40 flex items-center justify-end gap-3">
+                      <button onClick={(e) => { e.stopPropagation(); handleEditCluster(cl); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEditCluster(cl); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                      <button onClick={(e) => { e.stopPropagation(); if (onRemoveCluster) onRemoveCluster(cl.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
                     </div>
                   </div>
                 ))

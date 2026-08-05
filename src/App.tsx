@@ -530,6 +530,55 @@ export default function App() {
   };
 
   // Reset helper
+
+  const handleRemoveMr = (mrNumber: string) => {
+    if (confirm('Are you sure you want to delete this MR?')) {
+      setMrs(prev => prev.filter(m => m.mrNumber !== mrNumber));
+    }
+  };
+
+  const handleRemoveWorkAnalysis = (waId: string) => {
+    if (confirm('Are you sure you want to delete this Work Analysis?')) {
+      setWorkAnalyses(prev => prev.filter(w => w.id !== waId));
+    }
+  };
+
+  const handleRemoveContact = (contactId: string) => {
+    if (confirm('Are you sure you want to delete this contact?')) {
+      setContacts(prev => prev.filter(c => c.id !== contactId));
+    }
+  };
+
+  const handleRemoveVehicle = (plateNumber: string) => {
+    if (confirm('Are you sure you want to delete this vehicle?')) {
+      setVehicles(prev => prev.filter(v => v.plateNumber !== plateNumber));
+      setDrivers(prev => prev.map(d => {
+        if (d.assignedVehiclePlate === plateNumber) {
+          return { ...d, assignedVehiclePlate: '' };
+        }
+        return d;
+      }));
+    }
+  };
+
+  const handleRemovePa = (paNumber: string) => {
+    if (confirm('Are you sure you want to delete this PA?')) {
+      setPas(prev => prev.filter(p => p.paNumber !== paNumber));
+    }
+  };
+
+  const handleRemoveIncident = (id: string) => {
+    if (confirm('Are you sure you want to delete this incident?')) {
+      setIncidents(prev => prev.filter(i => i.id !== id));
+    }
+  };
+
+  const handleRemoveWcc = (mrRef: string) => {
+    if (confirm('Are you sure you want to delete this WCC closure record?')) {
+      setWccClosures(prev => prev.filter(w => w.mrRef !== mrRef));
+    }
+  };
+
   const handleResetData = () => {
     if (window.confirm('Are you sure you want to restore default Adiu mock data sets?')) {
       setMrs(INITIAL_MRS);
@@ -607,6 +656,7 @@ export default function App() {
           <MrScreen 
             mrs={mrs}
             onSaveMr={handleSaveMr}
+            onRemoveMr={handleRemoveMr}
             selectedMrRef={selectedMrRef}
             setSelectedMrRef={setSelectedMrRef}
           />
@@ -619,6 +669,7 @@ export default function App() {
             sites={sites}
             clusters={clusters}
             onSaveWorkAnalysis={handleSaveWorkAnalysis}
+            onRemoveWorkAnalysis={handleRemoveWorkAnalysis}
             selectedMrRef={selectedMrRef}
           />
         );
@@ -627,6 +678,7 @@ export default function App() {
           <ContactScreen 
             contacts={contacts}
             onSaveContact={handleSaveContact}
+            onRemoveContact={handleRemoveContact}
           />
         );
       case 'vehicles':
@@ -636,6 +688,7 @@ export default function App() {
             suppliers={contacts}
             drivers={drivers}
             onSaveVehicle={handleSaveVehicle}
+            onRemoveVehicle={handleRemoveVehicle}
           />
         );
       case 'compliance':
@@ -675,6 +728,7 @@ export default function App() {
             mrs={mrs}
             suppliers={contacts}
             onSavePa={handleSavePa}
+            onRemovePa={handleRemovePa}
             selectedMrRef={selectedMrRef}
             setSelectedMrRef={setSelectedMrRef}
             priceBook={priceBook}
@@ -732,6 +786,7 @@ export default function App() {
           <IncidentScreen
             incidents={incidents}
             onSaveIncident={handleSaveIncident}
+            onRemoveIncident={handleRemoveIncident}
             mrs={mrs}
             vehicles={vehicles}
             drivers={drivers}
@@ -746,6 +801,7 @@ export default function App() {
             wccClosures={wccClosures}
             mrs={mrs}
             onSaveWcc={handleSaveWcc}
+            onRemoveWcc={handleRemoveWcc}
           />
         );
       case 'approvals':

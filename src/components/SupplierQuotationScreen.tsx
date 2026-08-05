@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Supplier, PriceBookEntry, WorkAnalysis, SupplierQuotation, MR } from '../types';
-import { Plus, Trash2, Award, FileText, CheckCircle2, ChevronRight, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Award, FileText, CheckCircle2, ChevronRight, AlertCircle, Eye, Edit2 } from 'lucide-react';
 
 interface SupplierQuotationScreenProps {
   suppliers: Supplier[];
@@ -232,14 +232,12 @@ export default function SupplierQuotationScreen({
                             <td className="p-3 text-center font-mono">{q.quantity}</td>
                             <td className="p-3 text-right font-mono text-slate-600">{q.unitPrice.toLocaleString()} ETB</td>
                             <td className="p-3 text-right font-mono font-bold text-slate-900">{q.totalPrice.toLocaleString()} ETB</td>
-                            <td className="p-3 text-center">
-                              <button
-                                onClick={() => onDeleteQuotation(q.id)}
-                                className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors"
-                                title="Delete Quotation"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                            <td className="p-3 text-right">
+                              <div className="flex items-center justify-end gap-3">
+                                <button onClick={(e) => { e.stopPropagation(); document.getElementById('quotation-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                                <button onClick={(e) => { e.stopPropagation(); document.getElementById('quotation-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                                <button onClick={(e) => { e.stopPropagation(); onDeleteQuotation(q.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                              </div>
                             </td>
                           </tr>
                         ))

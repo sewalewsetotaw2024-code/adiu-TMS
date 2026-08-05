@@ -664,16 +664,7 @@ export const INITIAL_DELIVERIES: DeliveryJob[] = [
     lastMileMethod: 'Labour',
     lastMileCost: 2500,
     lastMilePhotoUrl: 'https://images.unsplash.com/photo-1521791136368-1a46827d0adb?auto=format&fit=crop&q=80&w=400',
-    lastMileDeliveryRequested: true,
-    lastMileSiteId: 'ET-ADD-1024',
-    lastMileTransportAmount: 3200,
-    lastMileRequestStatus: 'Requested',
-    lastMileApprovalDocumentUrl: 'https://example.com/last-mile-doc.pdf',
-    paymentRequested: true,
-    paymentAmount: 15500,
-    paymentRequestStatus: 'Requested',
-    paymentRequestNotes: 'Fuel surcharge and night labour support for Bahir Dar route.',
-    paymentProofDocumentUrl: 'https://example.com/payment-request.pdf'
+
   },
   {
     mrRef: 'MR-2026-0413',

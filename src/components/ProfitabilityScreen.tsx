@@ -8,6 +8,7 @@ interface ProfitabilityScreenProps {
   mrs: MR[];
   suppliers: Supplier[];
   onSavePa: (pa: ProfitabilityAnalysis) => void;
+  onRemovePa?: (paNumber: string) => void;
   selectedMrRef: string | null;
   setSelectedMrRef?: (mrRef: string | null) => void;
   priceBook: PriceBookEntry[];

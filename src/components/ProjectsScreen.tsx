@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Project } from '../types';
-import { Search, Plus, Briefcase, Activity } from 'lucide-react';
+import { Search, Plus, Briefcase, Activity, Eye, Edit2, Trash2 } from 'lucide-react';
 
 interface ProjectsScreenProps {
   projects: Project[];
@@ -130,11 +130,13 @@ export default function ProjectsScreen({ projects, onSaveProject }: ProjectsScre
                         {project.status}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
-                      <button onClick={() => handleEdit(project)} className="text-[#1D9E75] hover:text-[#168561] text-xs font-semibold uppercase tracking-wider">
-                        Edit
-                      </button>
-                    </td>
+                    <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(project); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(project); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); if (onRemoveProject) onRemoveProject(project.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                        </div>
+                      </td>
                   </tr>
                 ))}
                 {filteredProjects.length === 0 && (
