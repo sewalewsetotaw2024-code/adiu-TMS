@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Project } from '../types';
+import { Project, Contact } from '../types';
 import { Search, Plus, Briefcase, Activity, Eye, Edit2, Trash2 } from 'lucide-react';
 
 interface ProjectsScreenProps {
   projects: Project[];
+  vendors: Contact[];
   onSaveProject: (project: Project) => void;
+  onRemoveProject?: (projectId: string) => void;
 }
 
-export default function ProjectsScreen({ projects, onSaveProject }: ProjectsScreenProps) {
+export default function ProjectsScreen({ projects, vendors, onSaveProject, onRemoveProject }: ProjectsScreenProps) {
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeProject, setActiveProject] = useState<Project | null>(null);
@@ -21,7 +23,8 @@ export default function ProjectsScreen({ projects, onSaveProject }: ProjectsScre
       name: '',
       code: '',
       projectManager: '',
-      client: '',
+      customerClient: '',
+      regionCluster: 'CNR',
       status: 'Draft',
       assignedSites: [],
       budgetEtb: 0
@@ -107,7 +110,8 @@ export default function ProjectsScreen({ projects, onSaveProject }: ProjectsScre
                 <tr className="bg-[#F1EFE8]/50 border-b border-[#D3D1C7] text-xs font-semibold text-[#5F5E5A] uppercase tracking-wider">
                   <th className="px-5 py-3">Code</th>
                   <th className="px-5 py-3">Name</th>
-                  <th className="px-5 py-3">Client</th>
+                  <th className="px-5 py-3">Customer / Client</th>
+                  <th className="px-5 py-3">Region / Geofencezone</th>
                   <th className="px-5 py-3">Manager</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3 text-right">Actions</th>
@@ -118,13 +122,15 @@ export default function ProjectsScreen({ projects, onSaveProject }: ProjectsScre
                   <tr key={project.id} className="hover:bg-[#F1EFE8]/20 transition-colors">
                     <td className="px-5 py-4 font-mono font-semibold">{project.code}</td>
                     <td className="px-5 py-4 font-semibold">{project.name}</td>
-                    <td className="px-5 py-4">{project.client}</td>
+                    <td className="px-5 py-4">{project.customerClient}</td>
+                    <td className="px-5 py-4">{project.regionCluster}</td>
                     <td className="px-5 py-4">{project.projectManager}</td>
                     <td className="px-5 py-4">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${
                         project.status === 'Active' ? 'bg-blue-100 text-blue-800' :
                         project.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
-                        project.status === 'Suspended' ? 'bg-red-100 text-red-800' :
+                        project.status === 'On Hold' ? 'bg-amber-100 text-amber-800' :
+                        project.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {project.status}
@@ -196,15 +202,37 @@ export default function ProjectsScreen({ projects, onSaveProject }: ProjectsScre
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-[#5F5E5A] uppercase tracking-wider">Client</label>
-                <input 
-                  type="text" 
+                <label className="text-xs font-semibold text-[#5F5E5A] uppercase tracking-wider">Customer / Client</label>
+                <select
                   required
-                  value={activeProject.client}
-                  onChange={e => setActiveProject({...activeProject, client: e.target.value})}
-                  className="w-full h-10 px-3 border border-[#D3D1C7] rounded-lg text-sm focus:outline-none focus:border-[#1D9E75]"
-                  placeholder="e.g., Safaricom"
-                />
+                  value={activeProject.customerClient}
+                  onChange={e => setActiveProject({...activeProject, customerClient: e.target.value})}
+                  className="w-full h-10 px-3 border border-[#D3D1C7] rounded-lg text-sm focus:outline-none focus:border-[#1D9E75] bg-white"
+                >
+                  <option value="" disabled>Select a customer...</option>
+                  {vendors.map(v => (
+                    <option key={v.id} value={v.name}>{v.name}</option>
+                  ))}
+                  <option value="in-house">In-house</option>
+                  <option value="Ericsson">Ericsson</option>
+                  <option value="ZTE">ZTE</option>
+                  <option value="Huawei">Huawei</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[#5F5E5A] uppercase tracking-wider">Region / Geofencezone</label>
+                <select
+                  required
+                  value={activeProject.regionCluster}
+                  onChange={e => setActiveProject({...activeProject, regionCluster: e.target.value})}
+                  className="w-full h-10 px-3 border border-[#D3D1C7] rounded-lg text-sm focus:outline-none focus:border-[#1D9E75] bg-white"
+                >
+                  <option value="" disabled>Select region...</option>
+                  {['CWR', 'CNR', 'SER', 'SR', 'NER', 'SWR', 'NR', 'NWR', 'ER', 'WR', 'SSWR', 'Somali'].map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-[#5F5E5A] uppercase tracking-wider">Project Manager</label>
@@ -226,8 +254,10 @@ export default function ProjectsScreen({ projects, onSaveProject }: ProjectsScre
                 >
                   <option value="Draft">Draft</option>
                   <option value="Active">Active</option>
-                  <option value="Suspended">Suspended</option>
+                  <option value="On Hold">On Hold</option>
                   <option value="Completed">Completed</option>
+                  <option value="Closed">Closed</option>
+                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
             </div>

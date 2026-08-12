@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ProfitabilityAnalysis, MR, QuoteComparisonRow, Supplier, PriceBookEntry, WorkAnalysis, SupplierQuotation } from '../types';
 import { INITIAL_PAS } from '../data';
-import { ArrowRight, ShieldCheck, FileCheck, CheckCircle2, AlertTriangle, XCircle, Info, ExternalLink } from 'lucide-react';
+import { ExternalLink, CheckCircle2, XCircle, Info, ShieldCheck, FileCheck, ArrowRight, AlertTriangle } from 'lucide-react';
+import { ExportDropdown } from './ExportDropdown';
 
 interface ProfitabilityScreenProps {
   pas: ProfitabilityAnalysis[];
@@ -288,6 +289,59 @@ export default function ProfitabilityScreen({
     setSelectedPaNum('');
   };
 
+  const handleExport = async (format: 'excel' | 'pdf' | 'word', id: string) => {
+    const targetPa = pas.find(p => p.paNumber === id);
+    if (!targetPa) return;
+    const targetData = [targetPa];
+
+    if (format === 'excel') {
+      const xlsx = await import('xlsx');
+      const ws = xlsx.utils.json_to_sheet(targetData.map(p => ({
+        PA_Number: p.paNumber, MR_Ref: p.mrRef, Date: p.date, Status: p.approvalStatus
+      })));
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, "Price Analysis");
+      xlsx.writeFile(wb, `Price_Analysis_${id}.xlsx`);
+    } else if (format === 'pdf') {
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+      const doc = new jsPDF();
+      doc.text(`Price Analysis Report - ${id}`, 14, 15);
+      autoTable(doc, {
+        startY: 20,
+        head: [['PA Number', 'MR Ref', 'Date', 'Status']],
+        body: targetData.map(p => [p.paNumber, p.mrRef, p.date, p.approvalStatus]),
+      });
+      doc.save(`Price_Analysis_${id}.pdf`);
+    } else if (format === 'word') {
+      const docx = await import('docx');
+      const doc = new docx.Document({
+        sections: [{
+          properties: {},
+          children: [
+            new docx.Paragraph({ text: `Price Analysis Report - ${id}`, heading: docx.HeadingLevel.HEADING_1 }),
+            new docx.Table({
+              rows: [
+                new docx.TableRow({
+                  children: ['PA Number', 'MR Ref', 'Date', 'Status'].map(t => new docx.TableCell({ children: [new docx.Paragraph(t)] }))
+                }),
+                ...targetData.map(p => new docx.TableRow({
+                  children: [p.paNumber, p.mrRef, p.date, p.approvalStatus].map(t => new docx.TableCell({ children: [new docx.Paragraph(String(t))] }))
+                }))
+              ]
+            })
+          ]
+        }]
+      });
+      docx.Packer.toBlob(doc).then(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Price_Analysis_${id}.docx`;
+        link.click();
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 select-none pb-20" id="profitability-screen-container">
       <div className="bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm space-y-4">
@@ -296,12 +350,14 @@ export default function ProfitabilityScreen({
             <h2 className="text-xl font-bold text-[#2C2C2A]">Profitability analysis</h2>
             <p className="text-sm text-[#5F5E5A]">Review bid competitiveness and advance procurement decisions with a concise dashboard.</p>
           </div>
-          <button
-            onClick={handleCreateNewPa}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] text-white rounded-lg text-xs font-semibold hover:bg-[#1D9E75]/90 transition-colors"
-          >
-            <span>New PA</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCreateNewPa}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] text-white rounded-lg text-xs font-semibold hover:bg-[#1D9E75]/90 transition-colors"
+            >
+              <span>New PA</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -361,7 +417,10 @@ export default function ProfitabilityScreen({
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      <button onClick={() => setSelectedPaNum(pa.paNumber)} className="text-[#1D9E75] font-semibold">Open</button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button onClick={() => setSelectedPaNum(pa.paNumber)} className="text-[#1D9E75] font-semibold hover:underline">Open</button>
+                        <ExportDropdown onExport={(format) => handleExport(format, pa.paNumber)} />
+                      </div>
                     </td>
                   </tr>
                 ))

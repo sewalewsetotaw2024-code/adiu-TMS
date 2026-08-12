@@ -24,6 +24,7 @@ import IncidentScreen from './components/IncidentScreen';
 import SettingsScreen from './components/SettingsScreen';
 import TrackingScreen from './components/TrackingScreen';
 import ApprovalsScreen from './components/ApprovalsScreen';
+import WorkOrderSummaryScreen from './components/WorkOrderSummaryScreen';
 
 // Types & Initial Data
 import { 
@@ -632,6 +633,7 @@ export default function App() {
         return (
           <ProjectsScreen
             projects={projects}
+            vendors={contacts.filter(c => c.category === 'Vendor')}
             onSaveProject={handleSaveProject}
           />
         );
@@ -818,6 +820,14 @@ export default function App() {
             onSaveWcc={handleSaveWcc}
             onSaveVehicle={handleSaveVehicle}
             setScreen={setCurrentScreen}
+          />
+        );
+      case 'work-orders':
+        return (
+          <WorkOrderSummaryScreen
+            pas={pas}
+            workAnalyses={workAnalyses}
+            suppliers={contacts}
           />
         );
       case 'settings':

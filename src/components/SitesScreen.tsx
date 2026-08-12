@@ -40,6 +40,9 @@ export default function SitesScreen({
     const newSite: ProjectSite = {
       siteId: `ET-GEN-${nextNum}`,
       siteName: '',
+      projectId: '',
+      customerClient: '',
+      regionCluster: 'CNR',
       latitude: 9.0,
       longitude: 38.0,
       town: 'Addis Ababa',
@@ -47,11 +50,9 @@ export default function SitesScreen({
       zoneManager: 'Mulugeta Alene',
       implementationPriority: 'Medium',
       distance: 0,
-      geofenceZone: 'CNR',
       receiverName: '',
       receiverPhone: '',
-      status: 'Active',
-      projectRef: ''
+      status: 'Planned'
     };
     setActiveSite(newSite);
     setSitesViewMode('form');
@@ -201,10 +202,9 @@ export default function SitesScreen({
                     <th className="p-3">Site ID</th>
                     <th className="p-3">Site Name</th>
                     <th className="p-3">Project</th>
-                    <th className="p-3 text-right">Latitude</th>
-                    <th className="p-3 text-right">Longitude</th>
+                    <th className="p-3">Customer / Client</th>
+                    <th className="p-3">Region / Geofencezone</th>
                     <th className="p-3">Town</th>
-                    <th className="p-3">Geofence Zone</th>
                     <th className="p-3">Receiver Name</th>
                     <th className="p-3">Priority</th>
                     <th className="p-3 text-center">Action</th>
@@ -223,16 +223,15 @@ export default function SitesScreen({
                         <td className="p-3 font-mono font-bold text-[#1D9E75]">{site.siteId}</td>
                         <td className="p-3 font-medium">{site.siteName}</td>
                         <td className="p-3 text-[#5F5E5A] text-xs font-semibold">
-                          {projects.find((p) => p.id === site.projectRef)?.name || 'Unassigned'}
+                          {projects.find((p) => p.id === site.projectId)?.name || 'Unassigned'}
                         </td>
-                        <td className="p-3 text-right font-mono text-[11px] text-slate-600">{site.latitude}</td>
-                        <td className="p-3 text-right font-mono text-[11px] text-slate-600">{site.longitude}</td>
-                        <td className="p-3">{site.town}</td>
+                        <td className="p-3 text-xs font-medium">{site.customerClient || '---'}</td>
                         <td className="p-3">
                           <span className="bg-[#F1EFE8] px-2 py-0.5 rounded border border-[#D3D1C7]/45 font-mono text-[10px] font-bold text-[#2C2C2A]">
-                            {site.geofenceZone}
+                            {site.regionCluster || '---'}
                           </span>
                         </td>
+                        <td className="p-3">{site.town}</td>
                         <td className="p-3 text-slate-600">{site.receiverName || '---'}</td>
                         <td className="p-3">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
@@ -296,6 +295,50 @@ export default function SitesScreen({
                   className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75]"
                   placeholder="e.g. Bole Medhanialem High"
                 />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Project Assignment</label>
+                <select 
+                  value={activeSite?.projectId || ''} 
+                  onChange={(e) => {
+                    const pid = e.target.value;
+                    const proj = projects.find(p => p.id === pid);
+                    setActiveSite({ 
+                      ...activeSite!, 
+                      projectId: pid,
+                      customerClient: proj?.customerClient || '',
+                      regionCluster: proj?.regionCluster || ''
+                    });
+                  }}
+                  className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75] bg-white"
+                >
+                  <option value="" disabled>-- Select Project --</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Customer / Client</label>
+                  <input 
+                    type="text" 
+                    readOnly
+                    value={activeSite?.customerClient || ''} 
+                    className="h-9 px-3 border border-[#D3D1C7] bg-[#F1EFE8]/50 rounded-lg focus:outline-none text-slate-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Region / Geofencezone</label>
+                  <input 
+                    type="text" 
+                    readOnly
+                    value={activeSite?.regionCluster || ''} 
+                    className="h-9 px-3 border border-[#D3D1C7] bg-[#F1EFE8]/50 rounded-lg focus:outline-none text-slate-500"
+                  />
+                </div>
               </div>
 
               <div className="flex flex-col gap-1">
@@ -374,32 +417,6 @@ export default function SitesScreen({
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Geofence zone (Ethiopian Region)</label>
-                <select 
-                  value={activeSite?.geofenceZone || ''} 
-                  onChange={(e) => setActiveSite({ ...activeSite!, geofenceZone: e.target.value })}
-                  className="h-9 px-2 border border-[#D3D1C7] rounded-lg focus:outline-none bg-white font-semibold text-[#1D9E75]"
-                >
-                  {ETHIOPIAN_REGIONS.map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Target Project</label>
-                <select
-                  value={activeSite?.projectRef || ''}
-                  onChange={(e) => setActiveSite({ ...activeSite!, projectRef: e.target.value })}
-                  className="h-9 px-2 border border-[#D3D1C7] rounded-lg focus:outline-none bg-white"
-                >
-                  <option value="">Unassigned</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>{project.name}</option>
-                  ))}
-                </select>
-              </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Site Receiver contact name</label>
@@ -436,7 +453,7 @@ export default function SitesScreen({
                 onClick={handleSaveSite}
                 className="flex items-center gap-1 px-5 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/95 text-white rounded-lg font-sans font-semibold cursor-pointer transition-colors shadow-sm"
               >
-                <Check className="w-4 h-4" /> Save Geofenced Site
+                <Check className="w-4 h-4" /> Save Site
               </button>
             </div>
           </div>

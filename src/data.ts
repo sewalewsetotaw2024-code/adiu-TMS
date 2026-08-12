@@ -45,12 +45,12 @@ export const INITIAL_CATEGORIES: ItemCategory[] = [
 
 // 2. Project Sites
 export const INITIAL_SITES: ProjectSite[] = [
-  { siteId: 'ET-ADD-1024', siteName: 'Bole Medhanialem High', latitude: 9.0012, longitude: 38.7845, town: 'Addis Ababa', projectScope: 'LTE Expansion & MW Upgrade', zoneManager: 'Mulugeta Alene', implementationPriority: 'High', distance: 12, geofenceZone: 'CNR', receiverName: 'Abebe Kebede', receiverPhone: '+251911223344', status: 'Active' },
-  { siteId: 'ET-ADD-1875', siteName: 'CMC Sunshine Area', latitude: 9.0156, longitude: 38.8312, town: 'Addis Ababa', projectScope: '5G Trial Greenfield Site', zoneManager: 'Mulugeta Alene', implementationPriority: 'High', distance: 22, geofenceZone: 'CNR', receiverName: 'Chala Gemechu', receiverPhone: '+251911556677', status: 'Active' },
-  { siteId: 'ET-HAW-2041', siteName: 'Hawassa Industrial Park 2', latitude: 7.0543, longitude: 38.4812, town: 'Hawassa', projectScope: 'MW Link installation & swap', zoneManager: 'Kassahun Bekele', implementationPriority: 'Medium', distance: 275, geofenceZone: 'SR', receiverName: 'Tigist Shiferaw', receiverPhone: '+251922334455', status: 'Active' },
-  { siteId: 'ET-DIR-3011', siteName: 'Dire Dawa Sabian High', latitude: 9.6124, longitude: 41.8541, town: 'Dire Dawa', projectScope: 'Batteries Backup Overhaul', zoneManager: 'Hana Worku', implementationPriority: 'Medium', distance: 450, geofenceZone: 'ER', receiverName: 'Mohammed Yusuf', receiverPhone: '+251933445566', status: 'Active' },
-  { siteId: 'ET-BAH-0982', siteName: 'Bahir Dar Giyorgis', latitude: 11.5942, longitude: 37.3854, town: 'Bahir Dar', projectScope: 'Modernization RF Swap', zoneManager: 'Biniyam Girma', implementationPriority: 'High', distance: 565, geofenceZone: 'NWR', receiverName: 'Getachew Belay', receiverPhone: '+251944556677', status: 'Active' },
-  { siteId: 'ET-GON-1432', siteName: 'Gondar Azezo Airport Road', latitude: 12.5512, longitude: 37.4321, town: 'Gondar', projectScope: 'LTE 1800 Capacity Add', zoneManager: 'Biniyam Girma', implementationPriority: 'Low', distance: 740, geofenceZone: 'NWR', receiverName: 'Almaz Tefera', receiverPhone: '+251955667788', status: 'Active' }
+  { siteId: 'ET-ADD-1024', siteName: 'Bole Medhanialem High', projectId: 'prj-et-central', customerClient: 'ZTE', regionCluster: 'CNR', latitude: 9.0012, longitude: 38.7845, town: 'Addis Ababa', projectScope: 'LTE Expansion & MW Upgrade', zoneManager: 'Mulugeta Alene', implementationPriority: 'High', distance: 12, receiverName: 'Abebe Kebede', receiverPhone: '+251911223344', status: 'Ongoing' },
+  { siteId: 'ET-ADD-1875', siteName: 'CMC Sunshine Area', projectId: 'prj-et-central', customerClient: 'ZTE', regionCluster: 'CNR', latitude: 9.0156, longitude: 38.8312, town: 'Addis Ababa', projectScope: '5G Trial Greenfield Site', zoneManager: 'Mulugeta Alene', implementationPriority: 'High', distance: 22, receiverName: 'Chala Gemechu', receiverPhone: '+251911556677', status: 'Ongoing' },
+  { siteId: 'ET-HAW-2041', siteName: 'Hawassa Industrial Park 2', projectId: 'prj-et-central', customerClient: 'ZTE', regionCluster: 'SR', latitude: 7.0543, longitude: 38.4812, town: 'Hawassa', projectScope: 'MW Link installation & swap', zoneManager: 'Kassahun Bekele', implementationPriority: 'Medium', distance: 275, receiverName: 'Tigist Shiferaw', receiverPhone: '+251922334455', status: 'Planned' },
+  { siteId: 'ET-DIR-3011', siteName: 'Dire Dawa Sabian High', projectId: 'prj-et-central', customerClient: 'ZTE', regionCluster: 'ER', latitude: 9.6124, longitude: 41.8541, town: 'Dire Dawa', projectScope: 'Batteries Backup Overhaul', zoneManager: 'Hana Worku', implementationPriority: 'Medium', distance: 450, receiverName: 'Mohammed Yusuf', receiverPhone: '+251933445566', status: 'Planned' },
+  { siteId: 'ET-BAH-0982', siteName: 'Bahir Dar Giyorgis', projectId: 'prj-zte-north', customerClient: 'Ericsson', regionCluster: 'NWR', latitude: 11.5942, longitude: 37.3854, town: 'Bahir Dar', projectScope: 'Modernization RF Swap', zoneManager: 'Biniyam Girma', implementationPriority: 'High', distance: 565, receiverName: 'Getachew Belay', receiverPhone: '+251944556677', status: 'Start' },
+  { siteId: 'ET-GON-1432', siteName: 'Gondar Azezo Airport Road', projectId: 'prj-zte-north', customerClient: 'Ericsson', regionCluster: 'NWR', latitude: 12.5512, longitude: 37.4321, town: 'Gondar', projectScope: 'LTE 1800 Capacity Add', zoneManager: 'Biniyam Girma', implementationPriority: 'Low', distance: 740, receiverName: 'Almaz Tefera', receiverPhone: '+251955667788', status: 'Completed' }
 ];
 
 // 3. Store Clusters
@@ -849,7 +849,8 @@ export const INITIAL_PROJECTS = [
     name: 'ZTE LTE Expansion North Region',
     code: 'PRJ-ZTE-2026-N',
     projectManager: 'Mustefa Kemal',
-    client: 'Ethio Telecom / ZTE',
+    customerClient: 'Ericsson',
+    regionCluster: 'NWR',
     status: 'Active' as const,
     assignedSites: ['ET-BAH-0982'],
     budgetEtb: 1500000
@@ -859,7 +860,8 @@ export const INITIAL_PROJECTS = [
     name: 'Ethio Telecom Central Fiber Overhaul',
     code: 'PRJ-ET-2026-C',
     projectManager: 'Solomon Tekle',
-    client: 'Ethio Telecom',
+    customerClient: 'ZTE',
+    regionCluster: 'CNR',
     status: 'Active' as const,
     assignedSites: ['ET-ADD-1024'],
     budgetEtb: 2800000

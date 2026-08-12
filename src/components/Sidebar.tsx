@@ -71,6 +71,12 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
       group: 'Planning & Analysis'
     },
     {
+      id: 'work-orders',
+      label: 'Work Orders',
+      icon: FolderCheck,
+      group: 'Planning & Analysis'
+    },
+    {
       id: 'contacts',
       label: 'Contacts',
       icon: Users,

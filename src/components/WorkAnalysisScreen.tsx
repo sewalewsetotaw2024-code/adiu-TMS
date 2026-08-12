@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WorkAnalysis, WorkAnalysisSite, MR, StoreCluster, ProjectSite } from '../types';
 import { TL_STAFF, TIM_STAFF, TRUCK_TYPES } from '../data';
 import { Save, Check, ShieldAlert, FileText, Plus, Trash2, ArrowRight, Eye, Edit2 } from 'lucide-react';
+import { ExportDropdown } from './ExportDropdown';
 
 interface WorkAnalysisScreenProps {
   workAnalyses: WorkAnalysis[];
@@ -19,6 +20,7 @@ export default function WorkAnalysisScreen({
   sites,
   clusters,
   onSaveWorkAnalysis,
+  onRemoveWorkAnalysis,
   selectedMrRef 
 }: WorkAnalysisScreenProps) {
   
@@ -55,6 +57,8 @@ export default function WorkAnalysisScreen({
   const handleStartNewWa = () => {
     setIsCreatingNew(true);
     setViewMode('detail');
+    setSelectedClusterIds([]);
+    setActiveClusterId(null);
     const newWa: WorkAnalysis = {
       id: `DRAFT_NEW`,
       mrRef: 'Multiple (See Sites)',
@@ -275,25 +279,90 @@ export default function WorkAnalysisScreen({
     }
   };
 
-  const handleSubmitValidation = () => {
+  const handleSubmitValidation = (approverName: string, statusText: 'Validated' | 'Negotiation required' | 'Pending', notes: string) => {
     if (!activeWa) return;
     
+    if (approverName === activeWa.preparedBy) {
+      alert("Error: You cannot validate your own Work Analysis. It must be approved by your direct supervisor.");
+      return;
+    }
+
     let waToSave = activeWa;
     if (waToSave.id === 'DRAFT_NEW') {
       const nextNum = 91 + workAnalyses.length;
       waToSave = { ...waToSave, id: `WA-2026-00${nextNum}` };
     }
 
+    const trail = waToSave.approvalTrail || [];
+    trail.push({
+      approverName,
+      status: statusText,
+      date: new Date().toISOString().split('T')[0],
+      notes
+    });
+
     const updated = {
       ...waToSave,
-      status: 'Validated' as const,
-      validatedBy: 'Current User',
-      validationDate: new Date().toISOString().split('T')[0]
+      status: statusText,
+      validatedBy: approverName,
+      validationDate: new Date().toISOString().split('T')[0],
+      approvalTrail: trail
     };
     onSaveWorkAnalysis(updated);
-    alert(`Work analysis ${updated.id} submitted for validation!`);
+    alert(`Work analysis ${updated.id} ${statusText.toLowerCase()}!`);
     setViewMode('list');
     setActiveWa(null);
+  };  const handleExport = async (format: 'excel' | 'pdf' | 'word', id: string) => {
+    const targetWa = workAnalyses.find(w => w.id === id);
+    if (!targetWa) return;
+    const targetData = [targetWa];
+
+    if (format === 'excel') {
+      const xlsx = await import('xlsx');
+      const ws = xlsx.utils.json_to_sheet(targetData.map(w => ({
+        ID: w.id, MR_Ref: w.mrRef, Prepared_By: w.preparedBy, Date: w.date, Sites: w.totalSites, Distance: w.totalDistance, Status: w.status, Truck_Type: w.truckTypeRecommended
+      })));
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, "Work Analysis");
+      xlsx.writeFile(wb, `Work_Analysis_${id}.xlsx`);
+    } else if (format === 'pdf') {
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+      const doc = new jsPDF();
+      doc.text(`Work Analysis Report - ${id}`, 14, 15);
+      autoTable(doc, {
+        startY: 20,
+        head: [['ID', 'MR Ref', 'Prepared By', 'Date', 'Sites', 'Status', 'Truck Type']],
+        body: targetData.map(w => [w.id, w.mrRef, w.preparedBy, w.date, w.totalSites, w.status, w.truckTypeRecommended]),
+      });
+      doc.save(`Work_Analysis_${id}.pdf`);
+    } else if (format === 'word') {
+      const docx = await import('docx');
+      const doc = new docx.Document({
+        sections: [{
+          properties: {},
+          children: [
+            new docx.Paragraph({ text: `Work Analysis Report - ${id}`, heading: docx.HeadingLevel.HEADING_1 }),
+            new docx.Table({
+              rows: [
+                new docx.TableRow({
+                  children: ['ID', 'MR Ref', 'Prepared By', 'Date', 'Sites', 'Status', 'Truck Type'].map(t => new docx.TableCell({ children: [new docx.Paragraph(t)] }))
+                }),
+                ...targetData.map(w => new docx.TableRow({
+                  children: [w.id, w.mrRef, w.preparedBy, w.date, w.totalSites, w.status, w.truckTypeRecommended].map(t => new docx.TableCell({ children: [new docx.Paragraph(String(t))] }))
+                }))
+              ]
+            })
+          ]
+        }]
+      });
+      docx.Packer.toBlob(doc).then(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Work_Analysis_${id}.docx`;
+        link.click();
+      });
+    }
   };
 
   const specialReqsList = ['Security escort', 'Night delivery', 'Last-mile labour', 'Refrigeration'];
@@ -311,12 +380,14 @@ export default function WorkAnalysisScreen({
             <h2 className="text-xl font-bold text-[#2C2C2A]">Work Analysis</h2>
             <p className="text-sm text-[#5F5E5A]">Create, review, and manage planning summaries for transport requests.</p>
           </div>
-          <button
-            onClick={handleStartNewWa}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
-          >
-            <Plus className="w-4 h-4" /> New Work Analysis
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleStartNewWa}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
+            >
+              <Plus className="w-4 h-4" /> New Work Analysis
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -334,7 +405,7 @@ export default function WorkAnalysisScreen({
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#D3D1C7] shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#D3D1C7] shadow-sm overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-[#D3D1C7] text-xs font-sans font-bold text-[#5F5E5A] uppercase tracking-wider">
@@ -344,6 +415,7 @@ export default function WorkAnalysisScreen({
                 <th className="px-5 py-4">Date</th>
                 <th className="px-5 py-4">Sites</th>
                 <th className="px-5 py-4">Distance</th>
+                <th className="px-5 py-4">Truck Type</th>
                 <th className="px-5 py-4">Status</th>
                 <th className="px-5 py-4 text-right">Action</th>
               </tr>
@@ -362,8 +434,20 @@ export default function WorkAnalysisScreen({
                     <td className="px-5 py-4">{wa.mrRef}</td>
                     <td className="px-5 py-4">{wa.preparedBy}</td>
                     <td className="px-5 py-4">{wa.date}</td>
-                    <td className="px-5 py-4">{wa.totalSites}</td>
+                    <td className="px-5 py-4">
+                      <details className="cursor-pointer group">
+                        <summary className="font-semibold text-[#1D9E75] hover:underline list-none">
+                          {wa.totalSites} Sites ▾
+                        </summary>
+                        <ul className="mt-2 text-xs text-[#5F5E5A] space-y-1 pl-2 border-l-2 border-[#1D9E75]/30">
+                          {wa.sites?.map((s, idx) => (
+                            <li key={idx}>- {s.siteName || s.siteId}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    </td>
                     <td className="px-5 py-4">{wa.totalDistance} km</td>
+                    <td className="px-5 py-4 font-semibold">{wa.truckTypeRecommended}</td>
                     <td className="px-5 py-4">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${
                         wa.status === 'Validated' ? 'bg-emerald-100 text-emerald-800' :
@@ -375,8 +459,9 @@ export default function WorkAnalysisScreen({
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        <button onClick={(e) => { e.stopPropagation(); handleViewDetail(wa.id); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleViewDetail(wa.id); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
+                        <ExportDropdown onExport={(format) => handleExport(format, wa.id)} />
+                        <button onClick={(e) => { e.stopPropagation(); setViewMode('detail'); setActiveWa(wa); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
+                        <button onClick={(e) => { e.stopPropagation(); setViewMode('form'); setActiveWa({...wa}); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
                         <button onClick={(e) => { e.stopPropagation(); if (onRemoveWorkAnalysis) onRemoveWorkAnalysis(wa.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
                       </div>
                     </td>
@@ -748,63 +833,63 @@ export default function WorkAnalysisScreen({
         <div className="space-y-3">
           <div className="flex items-center gap-2 border-b border-[#D3D1C7] pb-2">
             <div className="w-5 h-5 rounded bg-[#1D9E75]/10 text-[#1D9E75] flex items-center justify-center font-bold text-xs">D</div>
-            <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section D — Validation Security Clearance</h2>
+            <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section D — Validation & Approval Trail</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-sans items-center bg-[#F1EFE8]/15 p-4 rounded-xl border border-[#D3D1C7]">
-            {/* Status indicators */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Validation status</label>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                  activeWa.status === 'Validated' 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                    : activeWa.status === 'Negotiation required'
-                    ? 'bg-red-50 text-red-700 border-red-200'
-                    : 'bg-amber-50 text-amber-700 border-amber-200'
-                }`}>
-                  ● {activeWa.status}
-                </span>
-                
-                {/* Trigger validation status */}
-                <select
-                  value={activeWa.status}
-                  onChange={(e) => setActiveWa({ ...activeWa, status: e.target.value as any })}
-                  className="h-8 px-2 border border-[#D3D1C7] rounded text-xs bg-white focus:outline-none"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Validated">Validated</option>
-                  <option value="Negotiation required">Negotiation required</option>
-                </select>
+          <div className="space-y-4">
+            {activeWa.approvalTrail && activeWa.approvalTrail.length > 0 && (
+              <div className="bg-[#F1EFE8]/40 p-4 rounded-xl border border-[#D3D1C7] text-xs font-sans">
+                <h3 className="font-bold text-[#2C2C2A] mb-3">Approval History</h3>
+                <div className="space-y-2">
+                  {activeWa.approvalTrail.map((trail, idx) => (
+                    <div key={idx} className="flex gap-4 p-2 bg-white rounded border border-[#D3D1C7]/50">
+                      <span className="font-semibold">{trail.date}</span>
+                      <span className="text-[#1D9E75] font-bold">{trail.approverName}</span>
+                      <span>set status to <span className="font-semibold">{trail.status}</span></span>
+                      {trail.notes && <span className="italic text-[#5F5E5A]">- "{trail.notes}"</span>}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs font-sans items-center bg-[#F1EFE8]/15 p-4 rounded-xl border border-[#D3D1C7]">
+              {/* Status indicators */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Validation status</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                    activeWa.status === 'Validated' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                      : activeWa.status === 'Negotiation required'
+                      ? 'bg-red-50 text-red-700 border-red-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
+                    ● {activeWa.status}
+                  </span>
+                </div>
+              </div>
 
-            {/* Validated by e-signature placeholder */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Validated by (ST&PIM M)</label>
-              <div className="relative">
+              {/* Validated by e-signature placeholder */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Approver Name (Supervisor)</label>
                 <input 
                   type="text" 
-                  value={activeWa.validatedBy}
-                  onChange={(e) => setActiveWa({ ...activeWa, validatedBy: e.target.value })}
-                  className="w-full h-9 pl-3 pr-24 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75] font-sans font-semibold text-xs italic"
+                  id="wa-approver-name"
+                  className="w-full h-9 pl-3 pr-3 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75] font-sans font-semibold text-xs"
                   placeholder="Manager name"
                 />
-                <span className="absolute right-2 top-1.5 px-2 py-0.5 bg-[#1D9E75]/10 text-[#1D9E75] border border-[#1D9E75]/30 rounded text-[9px] font-bold tracking-wider uppercase font-mono">
-                  E-Signature
-                </span>
               </div>
-            </div>
 
-            {/* Validation Date */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Validation date</label>
-              <input 
-                type="date" 
-                value={activeWa.validationDate || ''} 
-                onChange={(e) => setActiveWa({ ...activeWa, validationDate: e.target.value })}
-                className="h-9 px-2 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75]"
-              />
+              <div className="flex flex-col gap-1 col-span-2">
+                <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Approval Notes</label>
+                <input 
+                  type="text" 
+                  id="wa-approver-notes"
+                  className="w-full h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75] font-sans text-xs"
+                  placeholder="Optional notes"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -836,7 +921,11 @@ export default function WorkAnalysisScreen({
           
           <button
             id="wa-validate-btn"
-            onClick={handleSubmitValidation}
+            onClick={() => {
+              const approverInput = document.getElementById('wa-approver-name') as HTMLInputElement;
+              const notesInput = document.getElementById('wa-approver-notes') as HTMLInputElement;
+              handleSubmitValidation(approverInput?.value || 'Current User', 'Validated', notesInput?.value || '');
+            }}
             className="flex items-center gap-1 px-5 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/95 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-all shadow-sm"
           >
             <Check className="w-3.5 h-3.5" /> Submit validation

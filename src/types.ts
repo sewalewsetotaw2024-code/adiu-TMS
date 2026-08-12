@@ -70,6 +70,7 @@ export interface WorkAnalysis {
   validatedBy: string;
   validationDate: string;
   status: 'Pending' | 'Validated' | 'Negotiation required';
+  approvalTrail?: { approverName: string; status: string; date: string; notes?: string }[];
 }
 
 export interface WorkAnalysisSite {
@@ -192,8 +193,9 @@ export interface Project {
   name: string;
   code: string;
   projectManager: string;
-  client: string;
-  status: 'Draft' | 'Active' | 'Completed' | 'Suspended';
+  customerClient: string;
+  regionCluster: string;
+  status: 'Draft' | 'Active' | 'On Hold' | 'Completed' | 'Closed' | 'Cancelled';
   assignedSites: string[]; // siteIds
   budgetEtb?: number;
 }
@@ -201,6 +203,9 @@ export interface Project {
 export interface ProjectSite {
   siteId: string;
   siteName: string;
+  projectId?: string;
+  customerClient?: string;
+  regionCluster?: string;
   latitude: number;
   longitude: number;
   town: string;
@@ -208,11 +213,9 @@ export interface ProjectSite {
   zoneManager: string;
   implementationPriority: 'High' | 'Medium' | 'Low';
   distance: number;
-  geofenceZone: string; // Region NR, NER, NWR, etc.
   receiverName: string;
   receiverPhone: string;
-  status: string;
-  projectRef?: string;
+  status: 'Planned' | 'Start' | 'Ongoing' | 'Completed';
 }
 
 export interface StoreCluster {
