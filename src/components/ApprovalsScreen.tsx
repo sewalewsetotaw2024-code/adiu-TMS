@@ -66,7 +66,9 @@ export default function ApprovalsScreen({
     const list: ApprovalRequest[] = [];
 
     pas.filter(pa => pa.approvalStatus === 'Pending').forEach(pa => {
-      const variance = pa.quoteComparison[0]?.variancePercent ?? 0;
+      const selectedQuote = pa.quoteComparison.find(row => row.supplierId === pa.selectedSupplierId)
+        || pa.quoteComparison[0];
+      const variance = selectedQuote?.variancePercent ?? 0;
       list.push({
         id: `pa-${pa.paNumber}`,
         sourceKey: 'pa',

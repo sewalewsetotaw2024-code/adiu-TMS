@@ -378,12 +378,15 @@ export default function ContactScreen({ contacts, onSaveContact, onRemoveContact
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Capital city</label>
+                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Capital</label>
                   <input 
-                    type="text" 
+                    type="number" 
+                    min="0"
+                    step="any"
                     value={activeContact?.capitalCity || ''} 
                     onChange={(e) => handleFieldChange('capitalCity', e.target.value)}
                     className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none focus:border-[#1D9E75]"
+                    placeholder="Amount in Birr"
                   />
                 </div>
 

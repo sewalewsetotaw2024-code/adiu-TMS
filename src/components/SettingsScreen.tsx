@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Settings, Users, Shield, GitMerge, AlertTriangle, Sparkles, Server, Target, ToggleLeft, ToggleRight, Layers, BookOpen, Plus, PlusCircle, Save, Check, Search, Trash2, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
+import { Settings, Users, Shield, GitMerge, AlertTriangle, Sparkles, Server, Target, ToggleLeft, ToggleRight, Layers, BookOpen, Plus, PlusCircle, Save, Check, Search, Trash2, ArrowUp, ArrowDown, RotateCcw , MapPin, Tag, Edit2 , X } from 'lucide-react';
 import ScopeOfWorkScreen from './ScopeOfWorkScreen';
 import PriceBookScreen from './PriceBookScreen';
-import { PriceThresholdConfig, ItemCategory, PriceBookEntry, Contact } from '../types';
+import { PriceThresholdConfig, ItemCategory, PriceBookEntry, Contact, SiteRegion, ProjectSite } from '../types';
 
 interface UserItem {
   id: string;
@@ -124,6 +124,10 @@ interface SettingsScreenProps {
   vendors: Contact[];
   onSavePriceBookEntry: (entry: PriceBookEntry) => void;
   onRemovePriceBookEntry?: (id: string) => void;
+  siteRegions?: SiteRegion[];
+  onSaveSiteRegion?: (region: SiteRegion) => void;
+  onDeleteSiteRegion?: (id: string) => void;
+  sites?: ProjectSite[];
 }
 
 export default function SettingsScreen({
@@ -136,10 +140,14 @@ export default function SettingsScreen({
   priceBookData,
   vendors,
   onSavePriceBookEntry,
-  onRemovePriceBookEntry
+  onRemovePriceBookEntry,
+  siteRegions,
+  onSaveSiteRegion,
+  onDeleteSiteRegion,
+  sites
 }: SettingsScreenProps) {
   
-  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'workflows' | 'scope' | 'pricebook'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'workflows' | 'site-regions' | 'scope' | 'pricebook'>('users');
 
   // Custom roles states
   const [customRoleName, setCustomRoleName] = useState('');
@@ -147,6 +155,111 @@ export default function SettingsScreen({
   const [showAddRole, setShowAddRole] = useState(false);
 
   // 1. Initial Users state
+  
+  // Site Regions State
+  const [regions, setRegions] = useState<SiteRegion[]>(siteRegions || INITIAL_SITE_REGIONS);
+  const [searchRegionQuery, setSearchRegionQuery] = useState('');
+  const [showRegionForm, setShowRegionForm] = useState(false);
+  const [editingRegionId, setEditingRegionId] = useState<string | null>(null);
+  const [regionForm, setRegionForm] = useState<{
+    code: string;
+    name: string;
+    description: string;
+    regionalCompensationFactor: string;
+  }>({
+    code: '',
+    name: '',
+    description: '',
+    regionalCompensationFactor: '1.00'
+  });
+
+  React.useEffect(() => {
+    if (siteRegions) {
+      setRegions(siteRegions);
+    }
+  }, [siteRegions]);
+
+  const handleStartAddRegion = () => {
+    setEditingRegionId(null);
+    setRegionForm({
+      code: '',
+      name: '',
+      description: '',
+      regionalCompensationFactor: '1.00'
+    });
+    setShowRegionForm(true);
+  };
+
+  const handleStartEditRegion = (r: SiteRegion) => {
+    setEditingRegionId(r.id);
+    setRegionForm({
+      code: r.code,
+      name: r.name,
+      description: r.description,
+      regionalCompensationFactor: r.regionalCompensationFactor.toString()
+    });
+    setShowRegionForm(true);
+  };
+
+  const handleDeleteRegion = (id: string, code: string) => {
+    const sitesCount = (sites || []).filter(s => s.region === code || s.geofenceZone === code).length;
+    const msg = sitesCount > 0 
+      ? `Are you sure you want to delete region "${code}"? ${sitesCount} registered site(s) are currently bound to this region.`
+      : `Are you sure you want to delete region "${code}"?`;
+    if (window.confirm(msg)) {
+      if (onDeleteSiteRegion) {
+        onDeleteSiteRegion(id);
+      } else {
+        setRegions(prev => prev.filter(r => r.id !== id));
+      }
+    }
+  };
+
+  const handleSaveRegionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regionForm.code.trim() || !regionForm.name.trim()) {
+      alert('Region Code and Region Name are required.');
+      return;
+    }
+    const factorNum = parseFloat(regionForm.regionalCompensationFactor);
+    if (isNaN(factorNum) || factorNum <= 0) {
+      alert('Regional Compensation Factor must be a valid positive number (e.g. 1.25).');
+      return;
+    }
+
+    const cleanCode = regionForm.code.trim().toUpperCase();
+    const regionToSave: SiteRegion = {
+      id: editingRegionId || `reg-${Date.now()}`,
+      code: cleanCode,
+      name: regionForm.name.trim(),
+      description: regionForm.description.trim(),
+      regionalCompensationFactor: Math.round(factorNum * 100) / 100
+    };
+
+    if (onSaveSiteRegion) {
+      onSaveSiteRegion(regionToSave);
+    } else {
+      setRegions(prev => {
+        const idx = prev.findIndex(r => r.id === regionToSave.id || r.code === regionToSave.code);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = regionToSave;
+          return updated;
+        }
+        return [...prev, regionToSave];
+      });
+    }
+
+    setShowRegionForm(false);
+    setEditingRegionId(null);
+  };
+
+  const filteredRegions = regions.filter(r => 
+    r.code.toLowerCase().includes(searchRegionQuery.toLowerCase()) ||
+    r.name.toLowerCase().includes(searchRegionQuery.toLowerCase()) ||
+    r.description.toLowerCase().includes(searchRegionQuery.toLowerCase())
+  );
+
   const [users, setUsers] = useState<UserItem[]>([
     { id: 'u-1', name: 'Solomon Tekle', email: 'solomon@adiu-tms.com', role: 'Telecom Implementation Manager', region: 'Addis Ababa', status: 'Active' },
     { id: 'u-2', name: 'Mustefa Kemal', email: 'mustefa@adiu-tms.com', role: 'Sourcing, Transport and PIM Manager', region: 'Zonal/North', status: 'Active' },
@@ -601,6 +714,17 @@ export default function SettingsScreen({
           <Shield className="w-4 h-4" /> Roles & Permissions
         </button>
 
+        
+        <button
+          onClick={() => setActiveTab('site-regions')}
+          className={`px-5 py-2.5 text-xs font-sans font-semibold transition-all flex items-center gap-2 border-b-2 -mb-[2px] ${
+            activeTab === 'site-regions' 
+              ? 'border-[#1D9E75] text-[#1D9E75]' 
+              : 'border-transparent text-[#5F5E5A] hover:text-[#2C2C2A]'
+          }`}
+        >
+          <MapPin className="w-4 h-4" /> Site Regions ({regions.length})
+        </button>
         <button
           onClick={() => setActiveTab('workflows')}
           className={`px-5 py-2.5 text-xs font-sans font-semibold transition-all flex items-center gap-2 border-b-2 -mb-[2px] ${
@@ -1522,6 +1646,283 @@ export default function SettingsScreen({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+            {/* 4. Site Regions Configuration Tab (CRUD) */}
+      {activeTab === 'site-regions' && (
+        <div className="space-y-6" id="site-regions-crud-root">
+          
+          {/* Header Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-[#D3D1C7] shadow-sm">
+            <div className="space-y-1">
+              <h2 className="text-sm font-bold text-[#2C2C2A] uppercase tracking-wider flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#1D9E75]" />
+                Site Regions Configuration
+              </h2>
+              <p className="text-xs text-[#5F5E5A]">
+                Manage operational regional boundaries, codes, and Regional Compensation Factors applied to site registration.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleStartAddRegion}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4" /> Add Site Region
+            </button>
+          </div>
+
+          {/* Search & Overview Stats Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search region code, title, or geographic area..."
+                value={searchRegionQuery}
+                onChange={(e) => setSearchRegionQuery(e.target.value)}
+                className="w-full h-9 pl-9 pr-3 rounded-lg border border-[#D3D1C7] bg-white text-xs font-medium focus:outline-none focus:border-[#1D9E75]"
+              />
+            </div>
+            <div className="flex items-center gap-3 text-xs text-[#5F5E5A]">
+              <span>Showing <strong className="text-[#2C2C2A]">{filteredRegions.length}</strong> of {regions.length} regions</span>
+            </div>
+          </div>
+
+          {/* Clean Site Regions Table: Code, Name, Description, Regional Compensation Factor, Actions */}
+          <div className="bg-white rounded-xl border border-[#D3D1C7] shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-[#F8F7F4] border-b border-[#D3D1C7] text-[10px] font-bold text-[#5F5E5A] uppercase tracking-wider">
+                    <th className="p-3.5 w-28">Code</th>
+                    <th className="p-3.5 w-64">Name</th>
+                    <th className="p-3.5">Description</th>
+                    <th className="p-3.5 text-center w-48">Regional Compensation Factor</th>
+                    <th className="p-3.5 text-right pr-5 w-40">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#D3D1C7]/60">
+                  {filteredRegions.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-400 italic">
+                        No Site Regions match your search query. Click "Add Site Region" to create one.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRegions.map(reg => (
+                      <tr key={reg.id} className="hover:bg-[#FBFBFA] transition-colors">
+                        <td className="p-3.5 font-mono font-black text-[#1D9E75] text-sm">
+                          <span className="bg-[#1D9E75]/10 text-[#1D9E75] px-2.5 py-1 rounded-md border border-[#1D9E75]/20">
+                            {reg.code}
+                          </span>
+                        </td>
+                        <td className="p-3.5 font-bold text-[#2C2C2A]">
+                          {reg.name}
+                        </td>
+                        <td className="p-3.5 text-slate-600 leading-relaxed text-xs">
+                          {reg.description || <span className="text-slate-400 italic">No description provided</span>}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <span className="inline-flex items-center font-mono font-bold px-2.5 py-1 rounded-md text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                            {reg.regionalCompensationFactor === 1 || reg.regionalCompensationFactor === 0 ? '1.0' : reg.regionalCompensationFactor}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-right pr-5">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditRegion(reg)}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-300 transition-colors cursor-pointer"
+                              title="Edit Region"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 text-amber-600" /> Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRegion(reg.id, reg.code)}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-white hover:bg-red-50 text-red-600 text-xs font-semibold rounded-md border border-red-200 transition-colors cursor-pointer"
+                              title="Delete Region"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" /> Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Modal Overlay for Add & Edit (Matching Image 2 design) */}
+          {showRegionForm && (
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-in fade-in duration-150"
+              onClick={() => { setShowRegionForm(false); setEditingRegionId(null); }}
+            >
+              <div 
+                className="bg-white rounded-2xl shadow-2xl border border-[#D3D1C7]/60 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-5 border-b border-[#D3D1C7]/60">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#1D9E75]/10 text-[#1D9E75] flex items-center justify-center shrink-0 border border-[#1D9E75]/20">
+                      <MapPin className="w-5 h-5 text-[#1D9E75]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#2C2C2A]">
+                        {editingRegionId ? `Edit: ${regionForm.name || regionForm.code}` : 'Add New Site Region'}
+                      </h3>
+                      <p className="text-xs text-[#5F5E5A]">
+                        {editingRegionId ? 'Update region code, name, description, and compensation factor.' : 'Configure region code, name, description, and compensation factor.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setShowRegionForm(false); setEditingRegionId(null); }}
+                    className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Modal Form */}
+                <form onSubmit={handleSaveRegionSubmit} className="p-5 space-y-4 text-xs font-sans">
+                  {/* Field 1: Code */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-[#2C2C2A] uppercase tracking-tight flex items-center gap-1">
+                      Code <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={regionForm.code}
+                      onChange={(e) => setRegionForm({ ...regionForm, code: e.target.value.toUpperCase() })}
+                      placeholder="e.g. CNR, NWR, ER, SR"
+                      className="h-10 px-3.5 border border-[#D3D1C7] rounded-xl font-mono font-bold text-slate-800 uppercase focus:outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/10 bg-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Field 2: Name */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-[#2C2C2A] uppercase tracking-tight flex items-center gap-1">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={regionForm.name}
+                      onChange={(e) => setRegionForm({ ...regionForm, name: e.target.value })}
+                      placeholder="e.g. Central North Region (Addis Ababa)"
+                      className="h-10 px-3.5 border border-[#D3D1C7] rounded-xl font-medium text-slate-800 focus:outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/10 bg-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Field 3: Description */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-[#2C2C2A] uppercase tracking-tight">
+                      Description
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={regionForm.description}
+                      onChange={(e) => setRegionForm({ ...regionForm, description: e.target.value })}
+                      placeholder="Describe geographic bounds, terrain conditions, or highway routes..."
+                      className="p-3.5 border border-[#D3D1C7] rounded-xl text-slate-800 focus:outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/10 bg-white resize-none"
+                    />
+                  </div>
+
+                  {/* Field 4: Regional Compensation Factor - Pure numbers: 1.0, 1.3, 1.4 */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-[#2C2C2A] uppercase tracking-tight flex items-center gap-1">
+                        Regional Compensation Factor <span className="text-red-500">*</span>
+                      </label>
+                      <span className="text-xs font-mono font-bold text-[#1D9E75] bg-[#1D9E75]/10 px-2.5 py-0.5 rounded-full border border-[#1D9E75]/20">
+                        {(() => {
+                          const val = parseFloat(regionForm.regionalCompensationFactor || '1');
+                          if (isNaN(val) || val === 1 || val === 0) return '1.0';
+                          return val.toString();
+                        })()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={regionForm.regionalCompensationFactor}
+                        onChange={(e) => setRegionForm({ ...regionForm, regionalCompensationFactor: e.target.value })}
+                        className="h-10 px-3.5 border border-[#D3D1C7] rounded-xl font-mono font-bold text-slate-800 focus:outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/10 bg-white flex-1 text-sm"
+                        placeholder="e.g. 1.0, 1.3, 1.4"
+                        required
+                      />
+
+                      {/* Quick Presets: 1.0, 1.3, 1.4 */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setRegionForm({ ...regionForm, regionalCompensationFactor: '1.0' })}
+                          className={`px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                            parseFloat(regionForm.regionalCompensationFactor) === 1 || parseFloat(regionForm.regionalCompensationFactor) === 0
+                              ? 'bg-[#1D9E75] text-white border-[#1D9E75] shadow-xs'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          1.0
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRegionForm({ ...regionForm, regionalCompensationFactor: '1.3' })}
+                          className={`px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                            parseFloat(regionForm.regionalCompensationFactor) === 1.3
+                              ? 'bg-[#1D9E75] text-white border-[#1D9E75] shadow-xs'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          1.3
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRegionForm({ ...regionForm, regionalCompensationFactor: '1.4' })}
+                          className={`px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                            parseFloat(regionForm.regionalCompensationFactor) === 1.4
+                              ? 'bg-[#1D9E75] text-white border-[#1D9E75] shadow-xs'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                          }`}
+                        >
+                          1.4
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Modal Footer (matching Image 2 buttons) */}
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#D3D1C7]/60">
+                    <button
+                      type="button"
+                      onClick={() => { setShowRegionForm(false); setEditingRegionId(null); }}
+                      className="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-[#F1EFE8] hover:bg-slate-200 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#0F766E] hover:bg-[#0D655E] flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                    >
+                      <Check className="w-4 h-4" /> Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

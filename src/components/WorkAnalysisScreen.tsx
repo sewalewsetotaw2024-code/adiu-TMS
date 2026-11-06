@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkAnalysis, WorkAnalysisSite, MR, StoreCluster, ProjectSite } from '../types';
 import { TL_STAFF, TIM_STAFF, TRUCK_TYPES } from '../data';
-import { Save, Check, ShieldAlert, FileText, Plus, Trash2, ArrowRight, Eye, Edit2 } from 'lucide-react';
+import { Save, Check, ShieldAlert, FileText, Plus, Trash2, ArrowRight, Eye, Edit2, Route } from 'lucide-react';
 import { ExportDropdown } from './ExportDropdown';
 
 interface WorkAnalysisScreenProps {
@@ -117,8 +117,8 @@ export default function WorkAnalysisScreen({
     const includedSites = sites.filter(site => site.included !== false);
     const totalSites = includedSites.length;
     const totalDistance = includedSites.reduce((max, site) => Math.max(max, Number(site.distance || 0)), 0);
-    const townRoute = Array.from(new Set(includedSites.map(site => site.town).filter(Boolean))).join(' → ');
-    const route = warehouseName ? [warehouseName, townRoute].filter(Boolean).join(' → ') : townRoute;
+    const townRoute = Array.from(new Set(includedSites.map(site => site.town).filter(Boolean))).join(' â†’ ');
+    const route = warehouseName ? [warehouseName, townRoute].filter(Boolean).join(' â†’ ') : townRoute;
     return { totalSites, totalDistance, route };
   };
 
@@ -320,7 +320,7 @@ export default function WorkAnalysisScreen({
     if (format === 'excel') {
       const xlsx = await import('xlsx');
       const ws = xlsx.utils.json_to_sheet(targetData.map(w => ({
-        ID: w.id, MR_Ref: w.mrRef, Prepared_By: w.preparedBy, Date: w.date, Sites: w.totalSites, Distance: w.totalDistance, Status: w.status, Truck_Type: w.truckTypeRecommended
+        ID: w.id, Prepared_By: w.preparedBy, Date: w.date, Sites: w.totalSites, Distance: w.totalDistance, Status: w.status, Truck_Type: w.truckTypeRecommended
       })));
       const wb = xlsx.utils.book_new();
       xlsx.utils.book_append_sheet(wb, ws, "Work Analysis");
@@ -332,8 +332,8 @@ export default function WorkAnalysisScreen({
       doc.text(`Work Analysis Report - ${id}`, 14, 15);
       autoTable(doc, {
         startY: 20,
-        head: [['ID', 'MR Ref', 'Prepared By', 'Date', 'Sites', 'Status', 'Truck Type']],
-        body: targetData.map(w => [w.id, w.mrRef, w.preparedBy, w.date, w.totalSites, w.status, w.truckTypeRecommended]),
+        head: [['ID', 'Prepared By', 'Date', 'Sites', 'Status', 'Truck Type']],
+        body: targetData.map(w => [w.id, w.preparedBy, w.date, w.totalSites, w.status, w.truckTypeRecommended]),
       });
       doc.save(`Work_Analysis_${id}.pdf`);
     } else if (format === 'word') {
@@ -346,10 +346,10 @@ export default function WorkAnalysisScreen({
             new docx.Table({
               rows: [
                 new docx.TableRow({
-                  children: ['ID', 'MR Ref', 'Prepared By', 'Date', 'Sites', 'Status', 'Truck Type'].map(t => new docx.TableCell({ children: [new docx.Paragraph(t)] }))
+                  children: ['ID', 'Prepared By', 'Date', 'Sites', 'Status', 'Truck Type'].map(t => new docx.TableCell({ children: [new docx.Paragraph(t)] }))
                 }),
                 ...targetData.map(w => new docx.TableRow({
-                  children: [w.id, w.mrRef, w.preparedBy, w.date, w.totalSites, w.status, w.truckTypeRecommended].map(t => new docx.TableCell({ children: [new docx.Paragraph(String(t))] }))
+                  children: [w.id, w.preparedBy, w.date, w.totalSites, w.status, w.truckTypeRecommended].map(t => new docx.TableCell({ children: [new docx.Paragraph(String(t))] }))
                 }))
               ]
             })
@@ -409,8 +409,8 @@ export default function WorkAnalysisScreen({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-[#D3D1C7] text-xs font-sans font-bold text-[#5F5E5A] uppercase tracking-wider">
-                <th className="px-5 py-4">WA ID</th>
-                <th className="px-5 py-4">MR Ref</th>
+                <th className="px-5 py-4">WA ID</th>`r`n                <th className="px-5 py-4">Route</th>
+                
                 <th className="px-5 py-4">Prepared By</th>
                 <th className="px-5 py-4">Date</th>
                 <th className="px-5 py-4">Sites</th>
@@ -423,21 +423,29 @@ export default function WorkAnalysisScreen({
             <tbody className="divide-y divide-[#D3D1C7]/40 text-sm font-sans text-[#2C2C2A]">
               {workAnalyses.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center text-[#5F5E5A]">
-                    No work analysis records available. Create one from an MR to get started.
+                  <td colSpan={9} className="px-6 py-16 text-center text-[#5F5E5A]">
+                    No work analysis records available. Create a work analysis to get started.
                   </td>
                 </tr>
               ) : (
                 workAnalyses.map((wa) => (
                   <tr key={wa.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-5 py-4 font-mono text-[#1D9E75]">{wa.id}</td>
-                    <td className="px-5 py-4">{wa.mrRef}</td>
+                    <td className="px-5 py-4 font-semibold text-xs text-slate-800">
+                      <div className="flex items-center gap-1.5" title={wa.route}>
+                        <Route className="w-3.5 h-3.5 text-[#1D9E75] shrink-0" />
+                        <span className="truncate max-w-[200px]">
+                          {wa.route || (wa.warehouseName ? `${wa.warehouseName} → ${wa.sites?.map(s => s.town).filter(Boolean).join(' → ')}` : wa.sites?.map(s => s.town).filter(Boolean).join(' → ') || 'Direct')}
+                        </span>
+                      </div>
+                    </td>
+                    
                     <td className="px-5 py-4">{wa.preparedBy}</td>
                     <td className="px-5 py-4">{wa.date}</td>
                     <td className="px-5 py-4">
                       <details className="cursor-pointer group">
                         <summary className="font-semibold text-[#1D9E75] hover:underline list-none">
-                          {wa.totalSites} Sites ▾
+                          {wa.totalSites} Sites â–¾
                         </summary>
                         <ul className="mt-2 text-xs text-[#5F5E5A] space-y-1 pl-2 border-l-2 border-[#1D9E75]/30">
                           {wa.sites?.map((s, idx) => (
@@ -482,7 +490,7 @@ export default function WorkAnalysisScreen({
     return (
       <div className="space-y-6 select-none pb-20" id="work-analysis-loading-container">
         <div className="bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm">
-          <h2 className="text-xl font-bold text-[#2C2C2A]">Loading work analysis…</h2>
+          <h2 className="text-xl font-bold text-[#2C2C2A]">Loading work analysisâ€¦</h2>
           <p className="mt-2 text-sm text-[#5F5E5A]">The selected record is being prepared for editing.</p>
         </div>
       </div>
@@ -515,11 +523,11 @@ export default function WorkAnalysisScreen({
           </div>
         )}
 
-        {/* Section A — Header */}
+        {/* Section A â€” Header */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 border-b border-[#D3D1C7] pb-2">
             <div className="w-5 h-5 rounded bg-[#1D9E75]/10 text-[#1D9E75] flex items-center justify-center font-bold text-xs">A</div>
-            <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section A — General Header</h2>
+            <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section A â€” General Header</h2>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-sans">
@@ -528,10 +536,7 @@ export default function WorkAnalysisScreen({
               <input type="text" value={activeWa.id === 'DRAFT_NEW' ? 'Generated on save' : activeWa.id} disabled className="h-9 px-3 border border-[#D3D1C7] rounded-lg bg-[#F1EFE8]/50 text-[#5F5E5A] font-mono font-semibold" />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">MR reference</label>
-              <input type="text" value={activeWa.mrRef} disabled className="h-9 px-3 border border-[#D3D1C7] rounded-lg bg-[#F1EFE8]/50 text-[#5F5E5A] font-semibold" />
-            </div>
+            
 
             <div className="flex flex-col gap-1">
               <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Date prepared</label>
@@ -584,12 +589,12 @@ export default function WorkAnalysisScreen({
           </div>
         </div>
 
-        {/* Section B — Site summary table */}
+        {/* Section B â€” Site summary table */}
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b border-[#D3D1C7] pb-2">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded bg-[#1D9E75]/10 text-[#1D9E75] flex items-center justify-center font-bold text-xs">B</div>
-              <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section B — Site Summary</h2>
+              <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section B â€” Site Summary</h2>
             </div>
             <button
               onClick={handleAddSiteRow}
@@ -607,7 +612,7 @@ export default function WorkAnalysisScreen({
                   <th className="p-2">Include</th>
                   <th className="p-2">Site ID</th>
                   <th className="p-2">Site Name</th>
-                  <th className="p-2">Assigned MR</th>
+                  
                   <th className="p-2">Town</th>
                   <th className="p-2 text-right">Lat</th>
                   <th className="p-2 text-right">Long</th>
@@ -654,18 +659,7 @@ export default function WorkAnalysisScreen({
                           placeholder="Site name"
                         />
                       </td>
-                      <td className="p-2">
-                        <select
-                          value={site.mrRef || ''}
-                          onChange={(e) => handleSiteFieldChange(index, 'mrRef', e.target.value)}
-                          className="w-28 h-8 px-1 border border-[#D3D1C7] rounded text-xs focus:outline-none bg-white"
-                        >
-                          <option value="">Select MR...</option>
-                          {mrs.map(m => (
-                            <option key={m.mrNumber} value={m.mrNumber}>{m.mrNumber}</option>
-                          ))}
-                        </select>
-                      </td>
+                      
                       <td className="p-2">
                         <input 
                           type="text" 
@@ -737,11 +731,11 @@ export default function WorkAnalysisScreen({
           </div>
         </div>
 
-        {/* Section C — Truck & cost analysis */}
+        {/* Section C â€” Truck & cost analysis */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 border-b border-[#D3D1C7] pb-2">
             <div className="w-5 h-5 rounded bg-[#1D9E75]/10 text-[#1D9E75] flex items-center justify-center font-bold text-xs">C</div>
-            <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section C — Truck & Cost Analysis</h2>
+            <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section C â€” Truck & Cost Analysis</h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs font-sans">
@@ -829,11 +823,11 @@ export default function WorkAnalysisScreen({
           </div>
         </div>
 
-        {/* Section D — Validation */}
+        {/* Section D â€” Validation */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 border-b border-[#D3D1C7] pb-2">
             <div className="w-5 h-5 rounded bg-[#1D9E75]/10 text-[#1D9E75] flex items-center justify-center font-bold text-xs">D</div>
-            <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section D — Validation & Approval Trail</h2>
+            <h2 className="text-xs font-bold text-[#2C2C2A] uppercase tracking-wider">Section D â€” Validation & Approval Trail</h2>
           </div>
 
           <div className="space-y-4">
@@ -865,7 +859,7 @@ export default function WorkAnalysisScreen({
                       ? 'bg-red-50 text-red-700 border-red-200'
                       : 'bg-amber-50 text-amber-700 border-amber-200'
                   }`}>
-                    ● {activeWa.status}
+                    â— {activeWa.status}
                   </span>
                 </div>
               </div>

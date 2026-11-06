@@ -46,7 +46,8 @@ import {
   Incident,
   TripTracking,
   TransportRequestItem,
-  LoadingConfirmationData
+  LoadingConfirmationData,
+  SiteRegion
 } from './types';
 
 import {
@@ -68,7 +69,8 @@ import {
   INITIAL_INCIDENTS,
   INITIAL_TRACKING,
   INITIAL_ITEM_TRACKING,
-  INITIAL_LOADING_CONFIRMATIONS
+  INITIAL_LOADING_CONFIRMATIONS,
+  INITIAL_SITE_REGIONS
 } from './data';
 
 import { Settings, ShieldCheck, Database, RefreshCw, Layers } from 'lucide-react';
@@ -98,6 +100,37 @@ export default function App() {
   const [itemTracking, setItemTracking] = useState<TransportRequestItem[]>(INITIAL_ITEM_TRACKING);
   const [loadingConfirmations, setLoadingConfirmations] = useState<LoadingConfirmationData[]>(INITIAL_LOADING_CONFIRMATIONS);
   const [approvalsRefreshToken, setApprovalsRefreshToken] = useState<number>(0);
+  const [siteRegions, setSiteRegions] = useState<SiteRegion[]>(() => {
+    const saved = localStorage.getItem('adiu_site_regions_v2');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return INITIAL_SITE_REGIONS;
+  });
+
+  const handleSaveSiteRegion = (updatedRegion: SiteRegion) => {
+    setSiteRegions(prev => {
+      const idx = prev.findIndex(r => r.id === updatedRegion.id || r.code === updatedRegion.code);
+      let updated: SiteRegion[];
+      if (idx >= 0) {
+        updated = [...prev];
+        updated[idx] = updatedRegion;
+      } else {
+        updated = [...prev, updatedRegion];
+      }
+      localStorage.setItem('adiu_site_regions_v2', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleDeleteSiteRegion = (regionId: string) => {
+    setSiteRegions(prev => {
+      const updated = prev.filter(r => r.id !== regionId);
+      localStorage.setItem('adiu_site_regions_v2', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
 
   // Cross-screen contextual references
   const [selectedMrRef, setSelectedMrRef] = useState<string | null>(null);
@@ -397,11 +430,10 @@ export default function App() {
       }
     });
 
-    // If PA is approved, create delivery tracker job automatically
-    if (updatedPa.approvalStatus === 'Approved') {
+    // Issuing a generated work order starts its delivery and closure tracking.
+    if (updatedPa.issuedDate) {
       const matchedMr = mrs.find(m => m.mrNumber === updatedPa.mrRef);
-      const deliveryExists = deliveries.some(d => d.mrRef === updatedPa.mrRef);
-      if (!deliveryExists && matchedMr) {
+      if (matchedMr) {
         const newDelivery: DeliveryJob = {
           mrRef: updatedPa.mrRef,
           siteId: matchedMr.lineItems[0]?.siteId || 'ET-ADD-102',
@@ -426,28 +458,28 @@ export default function App() {
           lastMileApprovalStatus: 'Pending',
           lastMilePhotoUrl: ''
         };
-        setDeliveries(prev => [newDelivery, ...prev]);
+        setDeliveries(prev => prev.some(delivery => delivery.mrRef === updatedPa.mrRef)
+          ? prev
+          : [newDelivery, ...prev]);
 
-        // Also create a WCC closure request automatically
-        const wccExists = wccClosures.some(w => w.mrRef === updatedPa.mrRef);
-        if (!wccExists) {
-          const newWcc: WccClosure = {
-            mrRef: updatedPa.mrRef,
-            poNumber: `PO-88091-${updatedPa.paNumber.split('-')[2]}`,
-            poAmount: matchedMr.lineItems[0]?.distance ? matchedMr.lineItems[0].distance * 110 + 7500 : 18000,
-            supplierInvoiceAmount: matchedMr.lineItems[0]?.distance ? matchedMr.lineItems[0].distance * 110 + 7500 : 18000,
-            poVariance: 0,
-            poVariancePercent: 0,
-            docMrSigned: false,
-            docDeliveryPhoto: false,
-            docWorkOrderCopy: false,
-            docGrn: false,
-            docSupplierInvoice: false,
-            basecampStatus: 'Active',
-            wccStatus: 'Not applied'
-          };
-          setWccClosures(prev => [newWcc, ...prev]);
-        }
+        const newWcc: WccClosure = {
+          mrRef: updatedPa.mrRef,
+          poNumber: `PO-88091-${updatedPa.paNumber.split('-')[2]}`,
+          poAmount: matchedMr.lineItems[0]?.distance ? matchedMr.lineItems[0].distance * 110 + 7500 : 18000,
+          supplierInvoiceAmount: matchedMr.lineItems[0]?.distance ? matchedMr.lineItems[0].distance * 110 + 7500 : 18000,
+          poVariance: 0,
+          poVariancePercent: 0,
+          docMrSigned: false,
+          docDeliveryPhoto: false,
+          docWorkOrderCopy: false,
+          docGrn: false,
+          docSupplierInvoice: false,
+          basecampStatus: 'Active',
+          wccStatus: 'Not applied'
+        };
+        setWccClosures(prev => prev.some(wcc => wcc.mrRef === updatedPa.mrRef)
+          ? prev
+          : [newWcc, ...prev]);
       }
     }
   };
@@ -599,6 +631,8 @@ export default function App() {
       setTracking(INITIAL_TRACKING);
       setItemTracking(INITIAL_ITEM_TRACKING);
       setLoadingConfirmations(INITIAL_LOADING_CONFIRMATIONS);
+      setSiteRegions(INITIAL_SITE_REGIONS);
+      localStorage.removeItem('adiu_site_regions_v2');
       alert('Mock data successfully restored!');
     }
   };
@@ -717,6 +751,7 @@ export default function App() {
             sites={sites}
             clusters={clusters}
             projects={projects}
+            siteRegions={siteRegions}
             onSaveSite={handleSaveSite}
             onRemoveSite={handleRemoveSite}
             onSaveCluster={handleSaveCluster}
@@ -731,11 +766,12 @@ export default function App() {
             suppliers={contacts}
             onSavePa={handleSavePa}
             onRemovePa={handleRemovePa}
-            selectedMrRef={selectedMrRef}
             setSelectedMrRef={setSelectedMrRef}
             priceBook={priceBook}
             workAnalyses={workAnalyses}
             quotations={quotations}
+            sites={sites}
+            siteRegions={siteRegions}
             setScreen={setCurrentScreen}
           />
         );
@@ -828,6 +864,8 @@ export default function App() {
             pas={pas}
             workAnalyses={workAnalyses}
             suppliers={contacts}
+            sites={sites}
+            onSavePa={handleSavePa}
           />
         );
       case 'settings':
@@ -836,6 +874,10 @@ export default function App() {
             thresholdConfigs={thresholdConfigs}
             onSaveThresholdConfig={handleSaveThresholdConfig}
             onResetData={handleResetData}
+            siteRegions={siteRegions}
+            onSaveSiteRegion={handleSaveSiteRegion}
+            onDeleteSiteRegion={handleDeleteSiteRegion}
+            sites={sites}
             categories={categories}
             onSaveCategory={handleSaveCategory}
             onRemoveCategory={handleRemoveCategory}

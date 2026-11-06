@@ -12,7 +12,6 @@ export interface RequisitionItem {
 
 export interface MR {
   mrNumber: string;
-  requestType: 'MR' | 'GRF';
   poNumber: string;
   vendorClient: string;
   requestDate: string;
@@ -70,7 +69,7 @@ export interface WorkAnalysis {
   validatedBy: string;
   validationDate: string;
   status: 'Pending' | 'Validated' | 'Negotiation required';
-  approvalTrail?: { approverName: string; status: string; date: string; notes?: string }[];
+  approvalTrail?: any[];
 }
 
 export interface WorkAnalysisSite {
@@ -86,15 +85,12 @@ export interface WorkAnalysisSite {
   implementationPriority: 'High' | 'Medium' | 'Low';
   distance: number;
   recommendedTruck: '3-ton' | '5-ton' | '7-ton' | '10-ton' | 'Trailer';
-  included?: boolean;
-  mrRef?: string;
 }
 
-export interface Contact {
+export interface Supplier {
   id: string;
   name: string;
   tin: string;
-  category: 'Supplier' | 'Vendor';
   region: string;
   city: string;
   capitalCity: string;
@@ -119,8 +115,6 @@ export interface Contact {
   perfExperienceWithAdiu: number;
 }
 
-export type Supplier = Contact;
-
 export interface PriceBookEntry {
   id: string;
   code: string;
@@ -130,13 +124,13 @@ export interface PriceBookEntry {
   effectiveDate: string;
   expiryDate: string;
   status: 'Active' | 'Expired';
-  vendorId: string;
+  supplierId: string;
   itemCategoryId: string;
   remark?: string;
 }
 
 export interface PriceThresholdConfig {
-  vendorId: string;
+  supplierId: string;
   thresholdAmount: number;
   alertThresholdPercent: number;
 }
@@ -149,7 +143,6 @@ export interface Vehicle {
   model: string;
   lastQehsCheck: string;
   status: 'Compliant' | 'Non-compliant' | 'Blacklisted';
-  approvalStatus?: 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected';
   driverName: string;
   driverId: string;
   driverPhone: string;
@@ -193,19 +186,23 @@ export interface Project {
   name: string;
   code: string;
   projectManager: string;
-  customerClient: string;
-  regionCluster: string;
-  status: 'Draft' | 'Active' | 'On Hold' | 'Completed' | 'Closed' | 'Cancelled';
+  client: string;
+  status: 'Draft' | 'Active' | 'Completed' | 'Suspended';
   assignedSites: string[]; // siteIds
   budgetEtb?: number;
+}
+
+export interface SiteRegion {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  regionalCompensationFactor: number;
 }
 
 export interface ProjectSite {
   siteId: string;
   siteName: string;
-  projectId?: string;
-  customerClient?: string;
-  regionCluster?: string;
   latitude: number;
   longitude: number;
   town: string;
@@ -213,16 +210,17 @@ export interface ProjectSite {
   zoneManager: string;
   implementationPriority: 'High' | 'Medium' | 'Low';
   distance: number;
+  geofenceZone: string; // Region NR, NER, NWR, etc.
+  region?: string; // Configured Site Region code (e.g. CNR, NWR, ER)
   receiverName: string;
   receiverPhone: string;
-  status: 'Planned' | 'Start' | 'Ongoing' | 'Completed';
+  status: string;
 }
 
 export interface StoreCluster {
   id: string;
   name: string;
   code: string;
-  warehouseName: string;
   assignedSites: string[]; // List of siteIds
   zone: string;
   estimatedTotalDistance: number;
@@ -256,6 +254,7 @@ export interface QuoteComparisonRow {
 export interface ProfitabilityAnalysis {
   paNumber: string;
   mrRef: string;
+  workAnalysisId?: string;
   supplierId: string;
   date: string;
   quoteComparison: QuoteComparisonRow[];
@@ -489,28 +488,6 @@ export interface TransportRequestItem {
   vehicle: string;
   driver: string;
   dispatchDate: string;
-  receiverName?: string;
-  receiverPhone?: string;
-  proofOfDeliveryPhotoUrl?: string;
-  proofOfDeliveryPhotoUrls?: string[];
-
-  // issue reporting
-  issueReported?: boolean;
-  issueDescription?: string;
-
-  // last-mile delivery request workflow
-  lastMileDeliveryRequested?: boolean;
-  lastMileSiteId?: string;
-  lastMileTransportAmount?: number;
-  lastMileRequestStatus?: 'Not requested' | 'Requested' | 'Approved' | 'Rejected';
-  lastMileApprovalDocumentUrl?: string;
-
-  // transporter payment request workflow
-  paymentRequested?: boolean;
-  paymentAmount?: number;
-  paymentRequestStatus?: 'Not requested' | 'Requested' | 'Approved' | 'Rejected';
-  paymentRequestNotes?: string;
-  paymentProofDocumentUrl?: string;
 }
 
 export interface LoadingConfirmationData {
@@ -518,8 +495,6 @@ export interface LoadingConfirmationData {
   operatorName: string;
   operatorId: string;
   confirmationTime?: string;
-  status: 'Draft' | 'Pending Approval' | 'Confirmed';
+  status: 'Draft' | 'Confirmed';
   notes: string;
-  loadingEvidencePhotoUrls?: string[];
 }
-

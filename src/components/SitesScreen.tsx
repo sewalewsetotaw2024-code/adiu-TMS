@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { ProjectSite, StoreCluster, Project } from '../types';
-import { ETHIOPIAN_REGIONS, TIM_STAFF } from '../data';
+import { ProjectSite, StoreCluster, Project, SiteRegion } from '../types';
+import { ETHIOPIAN_REGIONS, TIM_STAFF, INITIAL_SITE_REGIONS } from '../data';
 import { Search, MapPin, Layers, Plus, Trash2, Edit2, Check, ArrowLeft, Eye } from 'lucide-react';
 
 interface SitesScreenProps {
   sites: ProjectSite[];
   clusters: StoreCluster[];
   projects: Project[];
+  siteRegions?: SiteRegion[];
   onSaveSite: (site: ProjectSite) => void;
   onRemoveSite?: (id: string) => void;
   onSaveCluster: (cluster: StoreCluster) => void;
@@ -17,11 +18,14 @@ export default function SitesScreen({
   sites,
   clusters,
   projects,
+  siteRegions,
   onSaveSite,
   onRemoveSite,
   onSaveCluster,
   onRemoveCluster
 }: SitesScreenProps) {
+  
+  const availableRegions = (siteRegions && siteRegions.length > 0) ? siteRegions : INITIAL_SITE_REGIONS;
   
   const [activeTab, setActiveTab] = useState<'sites' | 'clusters'>('sites');
   
@@ -42,7 +46,9 @@ export default function SitesScreen({
       siteName: '',
       projectId: '',
       customerClient: '',
-      regionCluster: 'CNR',
+      regionCluster: availableRegions[0]?.code || 'CNR',
+      region: availableRegions[0]?.code || 'CNR',
+      geofenceZone: availableRegions[0]?.code || 'CNR',
       latitude: 9.0,
       longitude: 38.0,
       town: 'Addis Ababa',
@@ -203,7 +209,7 @@ export default function SitesScreen({
                     <th className="p-3">Site Name</th>
                     <th className="p-3">Project</th>
                     <th className="p-3">Customer / Client</th>
-                    <th className="p-3">Region / Geofencezone</th>
+                    <th className="p-3">Site Region</th>
                     <th className="p-3">Town</th>
                     <th className="p-3">Receiver Name</th>
                     <th className="p-3">Priority</th>
@@ -227,9 +233,29 @@ export default function SitesScreen({
                         </td>
                         <td className="p-3 text-xs font-medium">{site.customerClient || '---'}</td>
                         <td className="p-3">
-                          <span className="bg-[#F1EFE8] px-2 py-0.5 rounded border border-[#D3D1C7]/45 font-mono text-[10px] font-bold text-[#2C2C2A]">
-                            {site.regionCluster || '---'}
-                          </span>
+                          {(() => {
+                            const regCode = site.region || site.regionCluster || site.geofenceZone || '';
+                            const matched = availableRegions.find(r => r.code === regCode);
+                            return (
+                              <div className="flex flex-col gap-0.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="bg-[#1D9E75]/10 text-[#1D9E75] px-2 py-0.5 rounded border border-[#1D9E75]/20 font-mono text-[10px] font-bold">
+                                    {regCode || 'Unassigned'}
+                                  </span>
+                                  {matched && (
+                                    <span className="bg-slate-100 text-slate-800 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200" title={`Compensation Factor: ${matched.regionalCompensationFactor === 1 || matched.regionalCompensationFactor === 0 ? '1.0' : matched.regionalCompensationFactor}`}>
+                                      {matched.regionalCompensationFactor === 1 || matched.regionalCompensationFactor === 0 ? '1.0' : matched.regionalCompensationFactor}
+                                    </span>
+                                  )}
+                                </div>
+                                {matched && (
+                                  <span className="text-[10px] text-[#5F5E5A] font-medium truncate max-w-[170px]" title={matched.name}>
+                                    {matched.name}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="p-3">{site.town}</td>
                         <td className="p-3 text-slate-600">{site.receiverName || '---'}</td>
@@ -330,14 +356,50 @@ export default function SitesScreen({
                     className="h-9 px-3 border border-[#D3D1C7] bg-[#F1EFE8]/50 rounded-lg focus:outline-none text-slate-500"
                   />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Region / Geofencezone</label>
-                  <input 
-                    type="text" 
-                    readOnly
-                    value={activeSite?.regionCluster || ''} 
-                    className="h-9 px-3 border border-[#D3D1C7] bg-[#F1EFE8]/50 rounded-lg focus:outline-none text-slate-500"
-                  />
+                <div className="flex flex-col gap-1 sm:col-span-2 bg-[#F1EFE8]/30 p-3 rounded-lg border border-[#D3D1C7]/60">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-[#2C2C2A] font-bold uppercase tracking-tight flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#1D9E75]" />
+                      Site Region (From Configuration)
+                    </label>
+                    {activeSite && (() => {
+                      const curCode = activeSite.region || activeSite.regionCluster || activeSite.geofenceZone || '';
+                      const matched = availableRegions.find(r => r.code === curCode);
+                      return matched ? (
+                        <span className="bg-[#1D9E75]/10 text-[#1D9E75] text-[10px] font-bold px-2 py-0.5 rounded border border-[#1D9E75]/20">
+                          Factor: {matched.regionalCompensationFactor === 1 || matched.regionalCompensationFactor === 0 ? '1.0' : matched.regionalCompensationFactor}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
+                  <select 
+                    value={activeSite?.region || activeSite?.regionCluster || activeSite?.geofenceZone || (availableRegions[0]?.code || '')} 
+                    onChange={(e) => {
+                      const selected = e.target.value;
+                      setActiveSite({ 
+                        ...activeSite!, 
+                        region: selected, 
+                        regionCluster: selected,
+                        geofenceZone: selected 
+                      });
+                    }}
+                    className="h-9 px-3 border border-[#D3D1C7] rounded-lg focus:outline-none bg-white font-semibold text-[#1D9E75] text-xs"
+                  >
+                    {availableRegions.map(r => (
+                      <option key={r.id || r.code} value={r.code}>
+                        {r.code} — {r.name} (Factor: {r.regionalCompensationFactor === 1 || r.regionalCompensationFactor === 0 ? '1.0' : r.regionalCompensationFactor})
+                      </option>
+                    ))}
+                  </select>
+                  {activeSite && (() => {
+                    const curCode = activeSite.region || activeSite.regionCluster || activeSite.geofenceZone || '';
+                    const matched = availableRegions.find(r => r.code === curCode);
+                    return matched?.description ? (
+                      <p className="text-[11px] text-[#5F5E5A] italic">
+                        {matched.description}
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
               </div>
 
@@ -568,14 +630,14 @@ export default function SitesScreen({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Zone (Ethiopian Region)</label>
+                  <label className="text-[11px] text-[#5F5E5A] font-medium uppercase tracking-tight">Zone / Region (From Configuration)</label>
                   <select 
                     value={activeCluster?.zone || ''} 
                     onChange={(e) => handleClusterFieldChange('zone', e.target.value)}
                     className="h-9 px-2 border border-[#D3D1C7] rounded-lg focus:outline-none bg-white font-medium text-[#1D9E75]"
                   >
-                    {ETHIOPIAN_REGIONS.map(r => (
-                      <option key={r} value={r}>{r}</option>
+                    {availableRegions.map(r => (
+                      <option key={r.code} value={r.code}>{r.code} — {r.name}</option>
                     ))}
                   </select>
                 </div>

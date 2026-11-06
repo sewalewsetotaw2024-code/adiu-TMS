@@ -14,12 +14,81 @@ import {
   Driver,
   SupplierQuotation,
   Incident,
-  TripTracking
+  TripTracking,
+  SiteRegion
 } from './types';
 
 // Standard 12 Ethiopian Regions
 export const ETHIOPIAN_REGIONS = [
   'NR', 'NER', 'NWR', 'WR', 'SWR', 'SSWR', 'CWRAA', 'CNR', 'ER', 'SER', 'SR', 'Somali'
+];
+
+
+// Initial Configured Site Regions with Regional Compensation Factors
+export const INITIAL_SITE_REGIONS: SiteRegion[] = [
+  { 
+    id: 'reg-01', 
+    code: 'CNR', 
+    name: 'Central North Region (Addis Ababa)', 
+    description: 'Addis Ababa metropolitan zone and central logistics corridor connecting regional telecom clusters', 
+    regionalCompensationFactor: 1.00 
+  },
+  { 
+    id: 'reg-02', 
+    code: 'NWR', 
+    name: 'North West Region (Bahir Dar / Gondar)', 
+    description: 'Amhara region corridor traversing Blue Nile gorge and high-altitude mountainous routes', 
+    regionalCompensationFactor: 1.30 
+  },
+  { 
+    id: 'reg-03', 
+    code: 'ER', 
+    name: 'Eastern Region (Dire Dawa / Harar)', 
+    description: 'Eastern expressway and industrial corridor through Adama, Awash basin, and Dire Dawa', 
+    regionalCompensationFactor: 1.30 
+  },
+  { 
+    id: 'reg-04', 
+    code: 'SR', 
+    name: 'Southern Region (Hawassa / Sidama)', 
+    description: 'Southern Rift Valley corridor covering Hawassa Industrial Park and agricultural hubs', 
+    regionalCompensationFactor: 1.00 
+  },
+  { 
+    id: 'reg-05', 
+    code: 'WR', 
+    name: 'Western Region (Nekemte / Jimma)', 
+    description: 'Western coffee belt and high terrain routes requiring heavy-duty vehicle suspension', 
+    regionalCompensationFactor: 1.30 
+  },
+  { 
+    id: 'reg-06', 
+    code: 'Somali', 
+    name: 'Somali Region (Jijiga / Gode)', 
+    description: 'Eastern lowlands and desert terrain corridor requiring specialized haulage and safety protocols', 
+    regionalCompensationFactor: 1.40 
+  },
+  { 
+    id: 'reg-07', 
+    code: 'NR', 
+    name: 'Northern Region (Mekelle / Tigray)', 
+    description: 'Northern mountainous cross-country corridor with multi-checkpoint logistics controls', 
+    regionalCompensationFactor: 1.40 
+  },
+  { 
+    id: 'reg-08', 
+    code: 'NER', 
+    name: 'North Eastern Region (Afar / Semera)', 
+    description: 'Afar salt basin and international port corridor with extreme heat operational conditions', 
+    regionalCompensationFactor: 1.40 
+  },
+  { 
+    id: 'reg-09', 
+    code: 'SWR', 
+    name: 'South West Region (Arba Minch / Jinka)', 
+    description: 'South Western lakes basin and national park route with rural unpaved access links', 
+    regionalCompensationFactor: 1.30 
+  }
 ];
 
 export const TIM_STAFF = [
@@ -528,6 +597,8 @@ export const INITIAL_WORK_ANALYSIS: WorkAnalysis[] = [
   {
     id: 'WA-2026-0091',
     mrRef: 'MR-2026-0412',
+    warehouseName: 'Kality Warehouse',
+    route: 'Kality Warehouse → Addis Ababa',
     date: '2026-06-21',
     preparedBy: 'Solomon Tekle',
     sites: [
@@ -560,6 +631,8 @@ export const INITIAL_WORK_ANALYSIS: WorkAnalysis[] = [
   {
     id: 'WA-2026-0092',
     mrRef: 'MR-2026-0413',
+    warehouseName: 'Kality Warehouse',
+    route: 'Kality Warehouse → Bahir Dar → Gondar',
     date: '2026-06-23',
     preparedBy: 'Biniyam Girma',
     sites: [
@@ -599,8 +672,8 @@ export const INITIAL_PAS: ProfitabilityAnalysis[] = [
     supplierId: 'sup-01',
     date: '2026-06-21',
     quoteComparison: [
-      { supplierId: 'sup-01', supplierName: 'Abyssinia Logistics Plc', truckType: '3-ton', routeZone: 'CNR', quotedPrice: 8500, budget: 9000, variance: -500, variancePercent: -5.5, status: 'Approved' },
-      { supplierId: 'sup-02', supplierName: 'Lucy Freight & Transit Plc', truckType: '3-ton', routeZone: 'CNR', quotedPrice: 9500, budget: 9000, variance: 500, variancePercent: 5.5, status: 'Pending' }
+      { supplierId: 'sup-01', supplierName: 'Abyssinia Logistics Plc', truckType: '3-ton', routeZone: 'CNR', quotedPrice: 8500, budget: 9000, variance: 500, variancePercent: 5.6, status: 'Approved' },
+      { supplierId: 'sup-02', supplierName: 'Lucy Freight & Transit Plc', truckType: '3-ton', routeZone: 'CNR', quotedPrice: 9500, budget: 9000, variance: -500, variancePercent: -5.6, status: 'Pending' }
     ],
     selectedSupplierId: 'sup-01',
     workOrderNumber: 'WO-2026-8801',
@@ -615,14 +688,14 @@ export const INITIAL_PAS: ProfitabilityAnalysis[] = [
     supplierId: 'sup-01',
     date: '2026-06-23',
     quoteComparison: [
-      { supplierId: 'sup-01', supplierName: 'Abyssinia Logistics Plc', truckType: '10-ton', routeZone: 'NWR', quotedPrice: 78000, budget: 75000, variance: 3000, variancePercent: 4.0, status: 'Approved' },
-      { supplierId: 'sup-02', supplierName: 'Lucy Freight & Transit Plc', truckType: '10-ton', routeZone: 'NWR', quotedPrice: 82000, budget: 75000, variance: 7000, variancePercent: 9.3, status: 'Rejected' }
+      { supplierId: 'sup-01', supplierName: 'Abyssinia Logistics Plc', truckType: '10-ton', routeZone: 'NWR', quotedPrice: 78000, budget: 75000, variance: -3000, variancePercent: -4.0, status: 'Approved' },
+      { supplierId: 'sup-02', supplierName: 'Lucy Freight & Transit Plc', truckType: '10-ton', routeZone: 'NWR', quotedPrice: 82000, budget: 75000, variance: -7000, variancePercent: -9.3, status: 'Rejected' }
     ],
     selectedSupplierId: 'sup-01',
     workOrderNumber: 'WO-2026-8802',
     issuedDate: '2026-06-23',
     specialInstructions: 'Blue Nile crossing security escort mandatory. GPS location should be reported every 4 hours.',
-    comment: 'Quote is 4% negative variance which requires TL & TIM validation. Approved due to security escort coordination capability.',
+    comment: 'Quote is 4% above budget and requires TL & TIM validation. Approved due to security escort coordination capability.',
     approvalStatus: 'Approved'
   },
   {
@@ -631,8 +704,8 @@ export const INITIAL_PAS: ProfitabilityAnalysis[] = [
     supplierId: 'sup-02',
     date: '2026-06-24',
     quoteComparison: [
-      { supplierId: 'sup-02', supplierName: 'Lucy Freight & Transit Plc', truckType: '5-ton', routeZone: 'CNR', quotedPrice: 9600, budget: 9000, variance: 600, variancePercent: 6.7, status: 'Pending' },
-      { supplierId: 'sup-01', supplierName: 'Abyssinia Logistics Plc', truckType: '5-ton', routeZone: 'CNR', quotedPrice: 9200, budget: 9000, variance: 200, variancePercent: 2.2, status: 'Pending' }
+      { supplierId: 'sup-02', supplierName: 'Lucy Freight & Transit Plc', truckType: '5-ton', routeZone: 'CNR', quotedPrice: 9600, budget: 9000, variance: -600, variancePercent: -6.7, status: 'Pending' },
+      { supplierId: 'sup-01', supplierName: 'Abyssinia Logistics Plc', truckType: '5-ton', routeZone: 'CNR', quotedPrice: 9200, budget: 9000, variance: -200, variancePercent: -2.2, status: 'Pending' }
     ],
     selectedSupplierId: 'sup-02',
     workOrderNumber: 'WO-2026-8803',
