@@ -96,7 +96,7 @@ export default function Sidebar({ currentScreen, setScreen }: SidebarProps) {
     },
     {
       id: 'compliance',
-      label: 'Vehicles & compliance',
+      label: 'Vehicle & Compliance',
       icon: ShieldCheck,
       group: 'Asset & Partner Management'
     },

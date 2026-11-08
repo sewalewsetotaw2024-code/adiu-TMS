@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Driver, Vehicle } from '../types';
-import { Plus, Search, ArrowLeft, Upload, Check, User, Phone, Calendar, Award, Trash2, Car, ShieldAlert, ShieldCheck, Eye, Edit2 } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Upload, Check, User, Phone, Calendar, Award, Trash2, Car, ShieldAlert, ShieldCheck, Lock, Unlock, FolderKanban } from 'lucide-react';
 
 interface DriverScreenProps {
   drivers: Driver[];
@@ -25,10 +25,6 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
     return matchesSearch && matchesStatus;
   });
 
-  const totalDrivers = drivers.length;
-  const activeDrivers = drivers.filter(d => d.status === 'Active').length;
-  const assignedDrivers = drivers.filter(d => d.assignedVehiclePlate).length;
-
   const handleInitNewDriver = () => {
     const newDriver: Driver = {
       id: `DRV-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -39,6 +35,7 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
       licenseExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'Active',
       assignedVehiclePlate: '',
+      isAssigned: false,
       experienceYears: 2,
       photoUrl: ''
     };
@@ -107,35 +104,6 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
     <div className="space-y-6 select-none" id="driver-screen-container">
       {viewMode === 'list' ? (
         <div className="bg-white p-6 rounded-xl border border-[#D3D1C7] shadow-sm space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-[#2C2C2A]">Driver operations</h2>
-              <p className="text-sm text-[#5F5E5A]">Keep compliance, availability, and fleet assignments visible in one place.</p>
-            </div>
-            <button 
-              id="add-driver-btn"
-              onClick={handleInitNewDriver}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#1D9E75]/90 text-white rounded-lg text-xs font-sans font-semibold cursor-pointer transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Add Driver
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Total drivers</p>
-              <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{totalDrivers}</p>
-            </div>
-            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Active drivers</p>
-              <p className="mt-2 text-2xl font-bold text-[#1D9E75]">{activeDrivers}</p>
-            </div>
-            <div className="rounded-xl border border-[#D3D1C7] bg-[#F1EFE8]/40 p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#5F5E5A] font-semibold">Assigned vehicles</p>
-              <p className="mt-2 text-2xl font-bold text-[#2C2C2A]">{assignedDrivers}</p>
-            </div>
-          </div>
-
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {/* Search */}
@@ -183,6 +151,7 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
                   <th className="p-3 text-center">Exp. Years</th>
                   <th className="p-3">License Expiry</th>
                   <th className="p-3">Assigned Vehicle</th>
+                  <th className="p-3">Project Allocation</th>
                   <th className="p-3">Status</th>
                   <th className="p-3 text-center">Action</th>
                 </tr>
@@ -190,7 +159,7 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
               <tbody className="divide-y divide-[#D3D1C7]/40 text-xs font-sans text-[#2C2C2A]">
                 {filteredDrivers.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-[#5F5E5A] italic">
+                    <td colSpan={10} className="p-8 text-center text-[#5F5E5A] italic">
                       No drivers registered yet — add the first driver record
                     </td>
                   </tr>
@@ -243,15 +212,43 @@ export default function DriverScreen({ drivers, vehicles, onSaveDriver, onRemove
                           )}
                         </td>
                         <td className="p-3">
+                          {d.isAssigned ? (
+                            <div className="flex flex-col gap-0.5 items-start">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <Lock className="w-2.5 h-2.5 text-blue-600" /> Assigned
+                              </span>
+                              <span className="text-[10px] text-slate-700 font-semibold max-w-[150px] truncate" title={d.assignedProjectName}>
+                                {d.assignedProjectName}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <Unlock className="w-2.5 h-2.5 text-emerald-600" /> Available
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getStatusStyle(d.status)}`}>
                             {d.status}
                           </span>
                         </td>
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            <button onClick={(e) => { e.stopPropagation(); handleViewDriver(d); }} className="text-[#1D9E75] hover:text-[#168561] font-semibold text-xs flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5"/> View</button>
-                            <button onClick={(e) => { e.stopPropagation(); handleViewDriver(d); }} className="text-amber-600 hover:text-amber-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Edit2 className="w-3.5 h-3.5"/> Edit</button>
-                            <button onClick={(e) => { e.stopPropagation(); if (onRemoveDriver) onRemoveDriver(d.id); }} className="text-red-500 hover:text-red-700 font-semibold text-xs flex items-center gap-1 transition-colors"><Trash2 className="w-3.5 h-3.5"/> Delete</button>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleViewDriver(d)}
+                              className="px-2.5 py-1 text-[10px] border border-[#D3D1C7] rounded hover:bg-[#F1EFE8] transition-colors cursor-pointer"
+                            >
+                              Edit / Details
+                            </button>
+                            {onRemoveDriver && (
+                              <button
+                                onClick={() => onRemoveDriver(d.id)}
+                                className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                                title="Delete Driver"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -12,6 +12,7 @@ import ContactScreen from './components/ContactScreen';
 import PriceBookScreen from './components/PriceBookScreen';
 import VehicleScreen from './components/VehicleScreen';
 import DispatchComplianceScreen from './components/DispatchCompliance';
+import ProjectFleetComplianceScreen from './components/ProjectFleetComplianceScreen';
 import DriverScreen from './components/DriverScreen';
 import SitesScreen from './components/SitesScreen';
 import ScopeOfWorkScreen from './components/ScopeOfWorkScreen';
@@ -47,7 +48,8 @@ import {
   TripTracking,
   TransportRequestItem,
   LoadingConfirmationData,
-  SiteRegion
+  SiteRegion,
+  ProjectAllocation
 } from './types';
 
 import {
@@ -70,7 +72,8 @@ import {
   INITIAL_TRACKING,
   INITIAL_ITEM_TRACKING,
   INITIAL_LOADING_CONFIRMATIONS,
-  INITIAL_SITE_REGIONS
+  INITIAL_SITE_REGIONS,
+  INITIAL_PROJECT_ALLOCATIONS
 } from './data';
 
 import { Settings, ShieldCheck, Database, RefreshCw, Layers } from 'lucide-react';
@@ -99,6 +102,7 @@ export default function App() {
   const [tracking, setTracking] = useState<TripTracking[]>(INITIAL_TRACKING);
   const [itemTracking, setItemTracking] = useState<TransportRequestItem[]>(INITIAL_ITEM_TRACKING);
   const [loadingConfirmations, setLoadingConfirmations] = useState<LoadingConfirmationData[]>(INITIAL_LOADING_CONFIRMATIONS);
+  const [allocations, setAllocations] = useState<ProjectAllocation[]>(INITIAL_PROJECT_ALLOCATIONS);
   const [approvalsRefreshToken, setApprovalsRefreshToken] = useState<number>(0);
   const [siteRegions, setSiteRegions] = useState<SiteRegion[]>(() => {
     const saved = localStorage.getItem('adiu_site_regions_v2');
@@ -364,6 +368,177 @@ export default function App() {
       }
       return v;
     }));
+  };
+
+  // --- Project Fleet Allocation & QEHS Approval Handlers ---
+  const handleSaveAllocation = (newAllocation: ProjectAllocation) => {
+    setAllocations(prev => {
+      const idx = prev.findIndex(a => a.id === newAllocation.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = newAllocation;
+        return copy;
+      }
+      return [newAllocation, ...prev];
+    });
+  };
+
+  const handleApproveAllocation = (allocationId: string, qehsDetails: { officer: string; comments?: string }) => {
+    const today = new Date().toISOString().split('T')[0];
+    let approvedAlc: ProjectAllocation | undefined;
+
+    setAllocations(prev => prev.map(a => {
+      if (a.id === allocationId) {
+        approvedAlc = {
+          ...a,
+          status: 'Approved',
+          reviewedByQehsOfficer: qehsDetails.officer,
+          reviewedDate: today,
+          qehsComments: qehsDetails.comments || a.qehsComments,
+          qehsInsurance: true,
+          qehsRoadWorthy: true,
+          qehsDriverLicence: true,
+          qehsLoadSecurity: true,
+          qehsFireExtinguisher: true
+        };
+        return approvedAlc;
+      }
+      return a;
+    }));
+
+    if (approvedAlc) {
+      const targetVehicle = approvedAlc.vehiclePlate;
+      const targetDriver = approvedAlc.driverId;
+      const prjId = approvedAlc.projectId;
+      const prjName = approvedAlc.projectName;
+      const driverName = approvedAlc.driverName;
+      const driverPhone = approvedAlc.driverPhone;
+
+      // Lock Vehicle to this project
+      setVehicles(prev => prev.map(v => {
+        if (v.plateNumber === targetVehicle) {
+          return {
+            ...v,
+            isAssigned: true,
+            assignedProjectId: prjId,
+            assignedProjectName: prjName,
+            driverId: targetDriver,
+            driverName: driverName,
+            driverPhone: driverPhone,
+            status: 'Compliant',
+            lastQehsCheck: today
+          };
+        }
+        return v;
+      }));
+
+      // Lock Driver to this project & vehicle
+      setDrivers(prev => prev.map(d => {
+        if (d.id === targetDriver) {
+          return {
+            ...d,
+            isAssigned: true,
+            assignedProjectId: prjId,
+            assignedProjectName: prjName,
+            assignedVehiclePlate: targetVehicle
+          };
+        }
+        return d;
+      }));
+    }
+  };
+
+  const handleRejectAllocation = (allocationId: string, reason: string, correctiveAction?: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    let rejectedAlc: ProjectAllocation | undefined;
+
+    setAllocations(prev => prev.map(a => {
+      if (a.id === allocationId) {
+        rejectedAlc = {
+          ...a,
+          status: 'Rejected',
+          reviewedDate: today,
+          rejectionReason: reason,
+          correctiveAction: correctiveAction || ''
+        };
+        return rejectedAlc;
+      }
+      return a;
+    }));
+
+    if (rejectedAlc) {
+      const targetVehicle = rejectedAlc.vehiclePlate;
+      const targetDriver = rejectedAlc.driverId;
+
+      setVehicles(prev => prev.map(v => {
+        if (v.plateNumber === targetVehicle && v.assignedProjectId === rejectedAlc?.projectId) {
+          return {
+            ...v,
+            isAssigned: false,
+            assignedProjectId: '',
+            assignedProjectName: ''
+          };
+        }
+        return v;
+      }));
+
+      setDrivers(prev => prev.map(d => {
+        if (d.id === targetDriver && d.assignedProjectId === rejectedAlc?.projectId) {
+          return {
+            ...d,
+            isAssigned: false,
+            assignedProjectId: '',
+            assignedProjectName: ''
+          };
+        }
+        return d;
+      }));
+    }
+  };
+
+  const handleReleaseAllocation = (allocationId: string) => {
+    let releasedAlc: ProjectAllocation | undefined;
+
+    setAllocations(prev => prev.map(a => {
+      if (a.id === allocationId) {
+        releasedAlc = {
+          ...a,
+          status: 'Released'
+        };
+        return releasedAlc;
+      }
+      return a;
+    }));
+
+    if (releasedAlc) {
+      const targetVehicle = releasedAlc.vehiclePlate;
+      const targetDriver = releasedAlc.driverId;
+
+      setVehicles(prev => prev.map(v => {
+        if (v.plateNumber === targetVehicle) {
+          return {
+            ...v,
+            isAssigned: false,
+            assignedProjectId: '',
+            assignedProjectName: ''
+          };
+        }
+        return v;
+      }));
+
+      setDrivers(prev => prev.map(d => {
+        if (d.id === targetDriver) {
+          return {
+            ...d,
+            isAssigned: false,
+            assignedProjectId: '',
+            assignedProjectName: '',
+            assignedVehiclePlate: ''
+          };
+        }
+        return d;
+      }));
+    }
   };
 
   const handleSaveSite = (site: ProjectSite) => {
@@ -725,11 +900,23 @@ export default function App() {
             drivers={drivers}
             onSaveVehicle={handleSaveVehicle}
             onRemoveVehicle={handleRemoveVehicle}
+            onNavigateToCompliance={() => setCurrentScreen('compliance')}
           />
         );
       case 'compliance':
         return (
-          <DispatchComplianceScreen 
+          <ProjectFleetComplianceScreen 
+            allocations={allocations}
+            workAnalyses={workAnalyses}
+            pas={pas}
+            mrs={mrs}
+            sites={sites}
+            clusters={clusters}
+            projects={projects}
+            onSaveAllocation={handleSaveAllocation}
+            onApproveAllocation={handleApproveAllocation}
+            onRejectAllocation={handleRejectAllocation}
+            onReleaseAllocation={handleReleaseAllocation}
             vehicles={vehicles}
             suppliers={contacts}
             drivers={drivers}

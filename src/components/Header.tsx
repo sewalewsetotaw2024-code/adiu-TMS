@@ -30,7 +30,9 @@ export default function Header({ currentScreen }: HeaderProps) {
       case 'suppliers':
         return { main: 'Suppliers', sub: 'Service partner registry and rating scorecards' };
       case 'vehicles':
-        return { main: 'Vehicles & compliance', sub: 'Fleet list, driver allocation, and QEHS audits' };
+        return { main: 'Vehicles management', sub: 'Fleet specifications, maintenance log, and asset registry' };
+      case 'compliance':
+        return { main: 'Project Fleet & Compliance', sub: 'Project fleet allocation, availability locking, and QEHS clearance' };
       case 'sites':
         return { main: 'Sites & clusters', sub: 'Project site coordinates and regional store clusters' };
       case 'price-book':

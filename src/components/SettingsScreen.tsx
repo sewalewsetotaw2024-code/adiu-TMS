@@ -3,6 +3,7 @@ import { Settings, Users, Shield, GitMerge, AlertTriangle, Sparkles, Server, Tar
 import ScopeOfWorkScreen from './ScopeOfWorkScreen';
 import PriceBookScreen from './PriceBookScreen';
 import { PriceThresholdConfig, ItemCategory, PriceBookEntry, Contact, SiteRegion, ProjectSite } from '../types';
+import { INITIAL_SITE_REGIONS } from '../data';
 
 interface UserItem {
   id: string;

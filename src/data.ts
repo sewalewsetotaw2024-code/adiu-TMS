@@ -15,14 +15,14 @@ import {
   SupplierQuotation,
   Incident,
   TripTracking,
-  SiteRegion
+  SiteRegion,
+  ProjectAllocation
 } from './types';
 
 // Standard 12 Ethiopian Regions
 export const ETHIOPIAN_REGIONS = [
   'NR', 'NER', 'NWR', 'WR', 'SWR', 'SSWR', 'CWRAA', 'CNR', 'ER', 'SER', 'SR', 'Somali'
 ];
-
 
 // Initial Configured Site Regions with Regional Compensation Factors
 export const INITIAL_SITE_REGIONS: SiteRegion[] = [
@@ -333,6 +333,9 @@ export const INITIAL_PRICE_CONFIGS: PriceThresholdConfig[] = [
 export const INITIAL_VEHICLES: Vehicle[] = [
   {
     plateNumber: 'ET-3-A98412',
+    isAssigned: true,
+    assignedProjectId: 'prj-et-central',
+    assignedProjectName: 'Ethio Telecom Central Fiber Overhaul',
     supplierId: 'sup-01',
     tonCapacity: 10,
     ageCategory: '0-5 yrs',
@@ -356,6 +359,9 @@ export const INITIAL_VEHICLES: Vehicle[] = [
   },
   {
     plateNumber: 'ET-3-B10423',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
     supplierId: 'sup-02',
     tonCapacity: 5,
     ageCategory: '6-10 yrs',
@@ -379,6 +385,9 @@ export const INITIAL_VEHICLES: Vehicle[] = [
   },
   {
     plateNumber: 'ET-3-C88145',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
     supplierId: 'sup-03',
     tonCapacity: 3,
     ageCategory: '10+ yrs',
@@ -400,6 +409,84 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     qehsVehiclePhotoUrl: '',
     qehsDriverIdPhotoUrl: '',
     rejectionReason: 'Expired road-worthy certificate, missing mandatory fire extinguisher and first aid kit. GPS tracker not fitted.'
+  },
+  {
+    plateNumber: 'ET-3-D55921',
+    supplierId: 'sup-01',
+    tonCapacity: 10,
+    ageCategory: '0-5 yrs',
+    model: 'Sino Truck Howo 2023',
+    lastQehsCheck: '2026-07-10',
+    status: 'Compliant',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
+    driverName: 'Dawit Getachew',
+    driverId: 'DL-778899',
+    driverPhone: '+251911445566',
+    assignedRoute: 'Amhara Region & North Corridor',
+    qehsInsurance: true,
+    qehsRoadWorthy: true,
+    qehsDriverLicence: true,
+    qehsLoadSecurity: true,
+    qehsFireExtinguisher: true,
+    qehsFirstAid: true,
+    qehsGpsTracker: true,
+    qehsVehiclePhotoUrl: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&q=80&w=400',
+    qehsDriverIdPhotoUrl: '',
+    rejectionReason: ''
+  },
+  {
+    plateNumber: 'ET-3-E44102',
+    supplierId: 'sup-01',
+    tonCapacity: 3,
+    ageCategory: '0-5 yrs',
+    model: 'Isuzu NPR 2022',
+    lastQehsCheck: '2026-06-18',
+    status: 'Compliant',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
+    driverName: 'Abebe Bekele',
+    driverId: 'DL-552109',
+    driverPhone: '+251912334455',
+    assignedRoute: 'Central Addis & Oromia Corridor',
+    qehsInsurance: true,
+    qehsRoadWorthy: true,
+    qehsDriverLicence: true,
+    qehsLoadSecurity: true,
+    qehsFireExtinguisher: true,
+    qehsFirstAid: true,
+    qehsGpsTracker: true,
+    qehsVehiclePhotoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=400',
+    qehsDriverIdPhotoUrl: '',
+    rejectionReason: ''
+  },
+  {
+    plateNumber: 'ET-3-F99231',
+    supplierId: 'sup-01',
+    tonCapacity: 5,
+    ageCategory: '0-5 yrs',
+    model: 'Mitsubishi Fuso 2023',
+    lastQehsCheck: '2026-06-19',
+    status: 'Compliant',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
+    driverName: 'Tewodros Kassahun',
+    driverId: 'DL-663211',
+    driverPhone: '+251913778899',
+    assignedRoute: 'Addis to Hawassa & Southern Region',
+    qehsInsurance: true,
+    qehsRoadWorthy: true,
+    qehsDriverLicence: true,
+    qehsLoadSecurity: true,
+    qehsFireExtinguisher: true,
+    qehsFirstAid: true,
+    qehsGpsTracker: true,
+    qehsVehiclePhotoUrl: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=400',
+    qehsDriverIdPhotoUrl: '',
+    rejectionReason: ''
   }
 ];
 
@@ -597,6 +684,7 @@ export const INITIAL_WORK_ANALYSIS: WorkAnalysis[] = [
   {
     id: 'WA-2026-0091',
     mrRef: 'MR-2026-0412',
+    clusterRef: 'CNR-Cluster-01',
     warehouseName: 'Kality Warehouse',
     route: 'Kality Warehouse → Addis Ababa',
     date: '2026-06-21',
@@ -631,6 +719,7 @@ export const INITIAL_WORK_ANALYSIS: WorkAnalysis[] = [
   {
     id: 'WA-2026-0092',
     mrRef: 'MR-2026-0413',
+    clusterRef: 'NWR-Cluster-02',
     warehouseName: 'Kality Warehouse',
     route: 'Kality Warehouse → Bahir Dar → Gondar',
     date: '2026-06-23',
@@ -669,6 +758,7 @@ export const INITIAL_PAS: ProfitabilityAnalysis[] = [
   {
     paNumber: 'PA-2026-0210',
     mrRef: 'MR-2026-0412',
+    workAnalysisId: 'WA-2026-0091',
     supplierId: 'sup-01',
     date: '2026-06-21',
     quoteComparison: [
@@ -685,6 +775,7 @@ export const INITIAL_PAS: ProfitabilityAnalysis[] = [
   {
     paNumber: 'PA-2026-0211',
     mrRef: 'MR-2026-0413',
+    workAnalysisId: 'WA-2026-0092',
     supplierId: 'sup-01',
     date: '2026-06-23',
     quoteComparison: [
@@ -701,6 +792,7 @@ export const INITIAL_PAS: ProfitabilityAnalysis[] = [
   {
     paNumber: 'PA-2026-0212',
     mrRef: 'MR-2026-0412',
+    workAnalysisId: 'WA-2026-0091',
     supplierId: 'sup-02',
     date: '2026-06-24',
     quoteComparison: [
@@ -736,8 +828,7 @@ export const INITIAL_DELIVERIES: DeliveryJob[] = [
     lastMileApprovalStatus: 'Approved',
     lastMileMethod: 'Labour',
     lastMileCost: 2500,
-    lastMilePhotoUrl: 'https://images.unsplash.com/photo-1521791136368-1a46827d0adb?auto=format&fit=crop&q=80&w=400',
-
+    lastMilePhotoUrl: 'https://images.unsplash.com/photo-1521791136368-1a46827d0adb?auto=format&fit=crop&q=80&w=400'
   },
   {
     mrRef: 'MR-2026-0413',
@@ -880,6 +971,10 @@ export const INITIAL_WCC_CLOSURES: WccClosure[] = [
 export const INITIAL_DRIVERS: Driver[] = [
   {
     id: 'DL-8914562',
+    isAssigned: true,
+    assignedProjectId: 'prj-et-central',
+    assignedProjectName: 'Ethio Telecom Central Fiber Overhaul',
+    supplierId: 'sup-01',
     name: 'Elias Teklu',
     phone: '+251911998877',
     licenseNumber: 'L-ET-8914562',
@@ -892,6 +987,10 @@ export const INITIAL_DRIVERS: Driver[] = [
   },
   {
     id: 'DL-9041285',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
+    supplierId: 'sup-02',
     name: 'Kebede Haile',
     phone: '+251920112233',
     licenseNumber: 'L-ET-9041285',
@@ -904,6 +1003,10 @@ export const INITIAL_DRIVERS: Driver[] = [
   },
   {
     id: 'DL-1102941',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
+    supplierId: 'sup-03',
     name: 'Mustefa Hassen',
     phone: '+251915667788',
     licenseNumber: 'L-ET-1102941',
@@ -913,6 +1016,170 @@ export const INITIAL_DRIVERS: Driver[] = [
     assignedVehiclePlate: 'ET-3-C88145',
     experienceYears: 4,
     photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400'
+  },
+  {
+    id: 'DL-778899',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
+    supplierId: 'sup-01',
+    name: 'Dawit Getachew',
+    phone: '+251911445566',
+    licenseNumber: 'L-ET-778899',
+    licenseClass: 'Dry Cargo (Grade 4)',
+    licenseExpiryDate: '2027-10-30',
+    status: 'Active',
+    assignedVehiclePlate: 'ET-3-D55921',
+    experienceYears: 7,
+    photoUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400'
+  },
+  {
+    id: 'DL-552109',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
+    supplierId: 'sup-01',
+    name: 'Abebe Bekele',
+    phone: '+251912334455',
+    licenseNumber: 'L-ET-552109',
+    licenseClass: 'Dry Cargo (Grade 3)',
+    licenseExpiryDate: '2027-08-12',
+    status: 'Active',
+    assignedVehiclePlate: 'ET-3-E44102',
+    experienceYears: 5,
+    photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400'
+  },
+  {
+    id: 'DL-663211',
+    isAssigned: false,
+    assignedProjectId: '',
+    assignedProjectName: '',
+    supplierId: 'sup-01',
+    name: 'Tewodros Kassahun',
+    phone: '+251913778899',
+    licenseNumber: 'L-ET-663211',
+    licenseClass: 'Dry Cargo (Grade 4)',
+    licenseExpiryDate: '2028-03-25',
+    status: 'Active',
+    assignedVehiclePlate: 'ET-3-F99231',
+    experienceYears: 8,
+    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400'
+  }
+];
+
+export const INITIAL_PROJECT_ALLOCATIONS: ProjectAllocation[] = [
+  {
+    id: 'ALC-2026-001',
+    workAnalysisId: 'WA-2026-0091',
+    workOrderNumber: 'WO-2026-8801',
+    paNumber: 'PA-2026-0210',
+    mrRef: 'MR-2026-0412',
+    supplierId: 'sup-01',
+    supplierName: 'Abyssinia Logistics Plc',
+    expectedOutboundDate: '2026-06-21',
+    clusterRef: 'CNR-Cluster-01',
+    clusterName: 'Central Addis Cluster',
+    sitesCount: 1,
+    projectId: 'prj-et-central',
+    projectName: 'Ethio Telecom Central Fiber Overhaul',
+    client: 'Ethio Telecom',
+    vehiclePlate: 'ET-3-A98412',
+    vehicleModel: 'Sino Truck Hohan 2022',
+    tonCapacity: 10,
+    driverId: 'DL-8914562',
+    driverName: 'Elias Teklu',
+    driverPhone: '+251911998877',
+    driverLicense: 'L-ET-8914562',
+    startDate: '2026-06-21',
+    expectedEndDate: '2026-11-30',
+    operationalZone: 'Kality Warehouse → Addis Ababa',
+    notes: 'Primary heavy equipment haulage unit for central fiber nodes.',
+    status: 'Approved',
+    qehsInsurance: true,
+    qehsRoadWorthy: true,
+    qehsDriverLicence: true,
+    qehsLoadSecurity: true,
+    qehsFireExtinguisher: true,
+    qehsFirstAid: true,
+    qehsGpsTracker: true,
+    reviewedByQehsOfficer: 'Solomon Tekle (QEHS Officer)',
+    reviewedDate: '2026-06-21',
+    qehsComments: 'Full safety clearance verified. Assigned and locked to project & Work Analysis.',
+    submittedBy: 'Solomon Tekle (PM)',
+    submittedDate: '2026-06-21'
+  },
+  {
+    id: 'ALC-2026-002',
+    workAnalysisId: 'WA-2026-0092',
+    workOrderNumber: 'WO-2026-8802',
+    paNumber: 'PA-2026-0211',
+    mrRef: 'MR-2026-0413',
+    supplierId: 'sup-01',
+    supplierName: 'Abyssinia Logistics Plc',
+    expectedOutboundDate: '2026-06-23',
+    clusterRef: 'NWR-Cluster-02',
+    clusterName: 'Northwest Amhara Cluster',
+    sitesCount: 1,
+    projectId: 'prj-zte-north',
+    projectName: 'ZTE LTE Expansion North Region',
+    client: 'Ethio Telecom / ZTE',
+    vehiclePlate: 'ET-3-D55921',
+    vehicleModel: 'Sino Truck Howo 2023',
+    tonCapacity: 10,
+    driverId: 'DL-778899',
+    driverName: 'Dawit Getachew',
+    driverPhone: '+251911445566',
+    driverLicense: 'L-ET-778899',
+    startDate: '2026-06-23',
+    expectedEndDate: '2026-12-15',
+    operationalZone: 'Kality Warehouse → Bahir Dar → Gondar',
+    notes: 'Tower construction materials & microwave dishes transport.',
+    status: 'Pending QEHS',
+    qehsInsurance: true,
+    qehsRoadWorthy: true,
+    qehsDriverLicence: true,
+    qehsLoadSecurity: false,
+    qehsFireExtinguisher: false,
+    qehsFirstAid: false,
+    qehsGpsTracker: false,
+    submittedBy: 'Mustefa Kemal (PM)',
+    submittedDate: '2026-06-23'
+  },
+  {
+    id: 'ALC-2026-003',
+    workAnalysisId: 'WA-2026-0091',
+    workOrderNumber: 'WO-2026-8801',
+    paNumber: 'PA-2026-0210',
+    mrRef: 'MR-2026-0412',
+    supplierId: 'sup-01',
+    supplierName: 'Abyssinia Logistics Plc',
+    expectedOutboundDate: '2026-06-21',
+    clusterRef: 'CNR-Cluster-01',
+    clusterName: 'Central Addis Cluster',
+    sitesCount: 1,
+    projectId: 'prj-et-central',
+    projectName: 'Ethio Telecom Central Fiber Overhaul',
+    client: 'Ethio Telecom',
+    vehiclePlate: 'ET-3-E44102',
+    vehicleModel: 'Isuzu NPR 2022',
+    tonCapacity: 3,
+    driverId: 'DL-552109',
+    driverName: 'Abebe Bekele',
+    driverPhone: '+251912334455',
+    driverLicense: 'L-ET-552109',
+    startDate: '2026-06-21',
+    operationalZone: 'Kality Warehouse → Addis Ababa',
+    notes: 'Saved allocation draft for second wave.',
+    status: 'Draft',
+    qehsInsurance: true,
+    qehsRoadWorthy: true,
+    qehsDriverLicence: true,
+    qehsLoadSecurity: true,
+    qehsFireExtinguisher: true,
+    qehsFirstAid: true,
+    qehsGpsTracker: true,
+    submittedBy: 'Solomon Tekle (PM)',
+    submittedDate: '2026-06-21'
   }
 ];
 
@@ -922,6 +1189,7 @@ export const INITIAL_PROJECTS = [
     name: 'ZTE LTE Expansion North Region',
     code: 'PRJ-ZTE-2026-N',
     projectManager: 'Mustefa Kemal',
+    client: 'Ethio Telecom / ZTE',
     customerClient: 'Ericsson',
     regionCluster: 'NWR',
     status: 'Active' as const,
@@ -933,6 +1201,7 @@ export const INITIAL_PROJECTS = [
     name: 'Ethio Telecom Central Fiber Overhaul',
     code: 'PRJ-ET-2026-C',
     projectManager: 'Solomon Tekle',
+    client: 'Ethio Telecom',
     customerClient: 'ZTE',
     regionCluster: 'CNR',
     status: 'Active' as const,
@@ -1015,7 +1284,6 @@ export const INITIAL_QUOTATIONS: SupplierQuotation[] = [
     mrRef: 'MR-2026-0413'
   }
 ];
-
 
 // 15. Incident Management — theft, loss, damage, delay, deviation, compliance, and documentation cases
 export const INITIAL_INCIDENTS: Incident[] = [

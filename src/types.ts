@@ -32,6 +32,7 @@ export interface MR {
   submitterCompany?: string;
   siteAddress?: string;
   requisitionItems?: RequisitionItem[];
+  requestType?: string;
 }
 
 export interface MRLineItem {
@@ -85,6 +86,7 @@ export interface WorkAnalysisSite {
   implementationPriority: 'High' | 'Medium' | 'Low';
   distance: number;
   recommendedTruck: '3-ton' | '5-ton' | '7-ton' | '10-ton' | 'Trailer';
+  included?: boolean;
 }
 
 export interface Supplier {
@@ -115,6 +117,10 @@ export interface Supplier {
   perfExperienceWithAdiu: number;
 }
 
+export interface Contact extends Supplier {
+  category?: 'Supplier' | 'Vendor' | 'Transporter' | string;
+}
+
 export interface PriceBookEntry {
   id: string;
   code: string;
@@ -124,13 +130,15 @@ export interface PriceBookEntry {
   effectiveDate: string;
   expiryDate: string;
   status: 'Active' | 'Expired';
-  supplierId: string;
+  supplierId?: string;
+  vendorId?: string;
   itemCategoryId: string;
   remark?: string;
 }
 
 export interface PriceThresholdConfig {
-  supplierId: string;
+  supplierId?: string;
+  vendorId?: string;
   thresholdAmount: number;
   alertThresholdPercent: number;
 }
@@ -142,7 +150,8 @@ export interface Vehicle {
   ageCategory: '0-5 yrs' | '6-10 yrs' | '10+ yrs';
   model: string;
   lastQehsCheck: string;
-  status: 'Compliant' | 'Non-compliant' | 'Blacklisted';
+  status: 'Compliant' | 'Non-compliant' | 'Blacklisted' | 'Draft';
+  approvalStatus?: string;
   driverName: string;
   driverId: string;
   driverPhone: string;
@@ -164,7 +173,14 @@ export interface Vehicle {
   qehsGpsTracker: boolean;
   qehsVehiclePhotoUrl: string;
   qehsDriverIdPhotoUrl: string;
+  qehsInsuranceDocUrl?: string;
+  qehsRoadWorthyDocUrl?: string;
   rejectionReason: string;
+
+  // Fleet Allocation to Projects & Availability Locking
+  isAssigned?: boolean;
+  assignedProjectId?: string;
+  assignedProjectName?: string;
 }
 
 export interface Driver {
@@ -176,9 +192,63 @@ export interface Driver {
   licenseExpiryDate: string;
   status: 'Active' | 'Suspended' | 'Inactive';
   assignedVehiclePlate?: string; // plateNumber of the vehicle they drive
+  supplierId?: string; // Transporter / Supplier organization they belong to
   experienceYears?: number;
   photoUrl?: string;
   licensePhotoUrl?: string;
+
+  // Project Allocation & Availability Locking
+  isAssigned?: boolean;
+  assignedProjectId?: string;
+  assignedProjectName?: string;
+}
+
+export interface ProjectAllocation {
+  id: string; // e.g. ALC-2026-001
+  workAnalysisId?: string;
+  workOrderNumber?: string;
+  paNumber?: string;
+  mrRef?: string;
+  supplierId?: string;
+  supplierName?: string;
+  expectedOutboundDate?: string;
+  clusterRef?: string;
+  clusterName?: string;
+  sitesCount?: number;
+
+  projectId: string;
+  projectName: string;
+  client: string;
+  vehiclePlate: string;
+  vehicleModel?: string;
+  tonCapacity?: number;
+  driverId: string;
+  driverName: string;
+  driverPhone: string;
+  driverLicense?: string;
+  startDate: string;
+  expectedEndDate?: string;
+  operationalZone?: string;
+  notes?: string;
+  status: 'Draft' | 'Pending QEHS' | 'Approved' | 'Rejected' | 'Released';
+
+  // QEHS Compliance Checklist
+  qehsInsurance: boolean;
+  qehsRoadWorthy: boolean;
+  qehsDriverLicence: boolean;
+  qehsLoadSecurity: boolean;
+  qehsFireExtinguisher: boolean;
+  qehsFirstAid: boolean;
+  qehsGpsTracker: boolean;
+
+  // Audit results
+  reviewedByQehsOfficer?: string;
+  reviewedDate?: string;
+  qehsComments?: string;
+  rejectionReason?: string;
+  correctiveAction?: string;
+  submittedBy?: string;
+  submittedDate?: string;
 }
 
 export interface Project {
@@ -187,7 +257,9 @@ export interface Project {
   code: string;
   projectManager: string;
   client: string;
-  status: 'Draft' | 'Active' | 'Completed' | 'Suspended';
+  customerClient?: string;
+  regionCluster?: string;
+  status: 'Draft' | 'Active' | 'Completed' | 'Suspended' | 'On Hold' | 'Cancelled';
   assignedSites: string[]; // siteIds
   budgetEtb?: number;
 }
@@ -210,11 +282,14 @@ export interface ProjectSite {
   zoneManager: string;
   implementationPriority: 'High' | 'Medium' | 'Low';
   distance: number;
-  geofenceZone: string; // Region NR, NER, NWR, etc.
+  geofenceZone?: string; // Region NR, NER, NWR, etc.
   region?: string; // Configured Site Region code (e.g. CNR, NWR, ER)
   receiverName: string;
   receiverPhone: string;
   status: string;
+  projectId?: string;
+  customerClient?: string;
+  regionCluster?: string;
 }
 
 export interface StoreCluster {
@@ -226,6 +301,7 @@ export interface StoreCluster {
   estimatedTotalDistance: number;
   assignedSdt: string;
   notes: string;
+  warehouseName?: string;
 }
 
 export interface ItemCategory {
@@ -488,6 +564,11 @@ export interface TransportRequestItem {
   vehicle: string;
   driver: string;
   dispatchDate: string;
+
+  lastMileRequestStatus?: string;
+  lastMileTransportAmount?: number;
+  paymentRequestStatus?: string;
+  paymentAmount?: number;
 }
 
 export interface LoadingConfirmationData {
@@ -495,6 +576,7 @@ export interface LoadingConfirmationData {
   operatorName: string;
   operatorId: string;
   confirmationTime?: string;
-  status: 'Draft' | 'Confirmed';
+  status: 'Draft' | 'Confirmed' | 'Pending Approval';
   notes: string;
+  loadingEvidencePhotoUrls?: string[];
 }
